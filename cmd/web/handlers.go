@@ -1,6 +1,7 @@
 package main
 
 import (
+	"forum/cmd/utils"
 	"html/template"
 	"log"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 func handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		utils.ErrorPage(w, http.StatusNotFound, "page not found")
 		return
 	}
 
@@ -21,7 +22,12 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	err = tmpl.Execute(w, nil)
 	if err != nil {
-		// 500
+		utils.ErrorPage(w, http.StatusNotFound, "page not found")
+		log.Print(err)
 		return
 	}
 }
+
+//func handlerPost(w http.ResponseWriter, r http.Request) {
+//
+//}
