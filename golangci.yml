@@ -1,0 +1,74 @@
+linters-settings:
+  gocyclo:
+    min-complexity: 20
+  dupl:
+    threshold: 200
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  goimports:
+    local-prefixes: github.com/golangci/golangci-lint
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+
+linters:
+  disable:
+    - godox
+    - funlen
+    - rowserrcheck
+    - gci
+    - godot
+  enable:
+    - asciicheck
+    - bodyclose
+    - dogsled
+    - dupl
+    - errcheck
+    - exhaustive
+    - exportloopref
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goheader
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nestif
+    - nlreturn
+    - noctx
+    - nolintlint
+    - prealloc
+    - revive
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - testpackage
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - wsl
+
+run:
+  go: '1.22'
+  timeout: 5m
+  tests: false
