@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"forum/internal"
 	"net/http"
 )
 
@@ -14,7 +14,11 @@ func main() {
 	//fileServer := http.FileServer(http.Dir("./ui/static"))
 	//mux.Handle("GET /static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
 
-	log.Println("Listening on http://localhost:8080...")
-	serverErr := http.ListenAndServe(":8080", mux)
-	log.Fatal(serverErr)
+	//log.Println("Listening on http://localhost:8080...")
+	//serverErr := http.ListenAndServe(":8080", mux)
+	//log.Fatal(serverErr)
+	//internal.Create()
+	//internal.Update("Lich", "kel-tuzad@undeads.ud", 6)
+	//internal.Delete(4)
+	internal.Create("Hrust", "nagibator777@sigma.kz")
 }
