@@ -2,7 +2,6 @@ package internal
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
@@ -21,7 +20,13 @@ func Create(name string, email string) {
 	}
 }
 
-func Read() {
+type User struct {
+	id    int
+	name  string
+	email string
+}
+
+func Read() []User {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		log.Fatal(err)
@@ -30,11 +35,8 @@ func Read() {
 
 	//result, err := db.Exec(query)
 
-	var users []struct {
-		id    int
-		name  string
-		email string
-	}
+	var users []User
+
 	query := "select * from users;"
 	rows, err := db.Query(query)
 
@@ -50,8 +52,9 @@ func Read() {
 		}
 		users = append(users, user)
 	}
-	fmt.Println(users)
+	return users
 }
+
 func Update(name string, email string, id int) {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {

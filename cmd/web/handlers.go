@@ -2,6 +2,7 @@ package main
 
 import (
 	"forum/cmd/utils"
+	"forum/internal"
 	"html/template"
 	"log"
 	"net/http"
@@ -19,8 +20,9 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
+	users := internal.Read()
 
-	err = tmpl.Execute(w, nil)
+	err = tmpl.Execute(w, users)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusNotFound, "page not found")
 		log.Print(err)
