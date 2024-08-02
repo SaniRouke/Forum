@@ -8,15 +8,15 @@
 <body>
 {{ template "nav" . }}
 <div class="container">
-    <h1>Create a New Post</h1>
+    <h1>Create a new post about your skuffy life</h1>
     <form method="post" action="/create">
         <label for="topic">Topic:</label>
         <input type="text" id="topic" name="topic" required>
         <br>
-        <label for="body">Body:</label>
+        <label for="body">Text:</label>
         <textarea id="body" name="body" required></textarea>
         <br>
-        <button type="submit">Create Post</button>
+        <button type="submit">Publish</button>
     </form>
 </div>
 </body>
