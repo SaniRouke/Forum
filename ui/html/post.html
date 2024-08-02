@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Posting</title>
+    <title>{{ .Topic }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-
+{{ template "nav" . }}
+<main class="container">
+    <h1>{{ .Topic }}</h1>
+    <p>{{ .Body }}</p>
+</main>
 </body>
 </html>

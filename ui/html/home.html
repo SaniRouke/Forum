@@ -2,14 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skuf Forum</title>
-    <link rel="stylesheet" type="text/css" href="../static/styles.css">
-</head>
+    <title>Forum - Home</title>
+    <link rel="stylesheet" href="/static/styles.css">
+ </head>
 <body>
-<h1>Skuf aller Länder, vereinigt Euch!</h1>
-<p>Rate your Skuf level from 8 to 10.</p>
-
-{{.}}
+{{ template "nav" . }}
+<main class="container">
+    <h1>Skuforum</h1>
+    <ul>
+        {{ range .Posts }}
+        <li><a href="/post?id={{ .ID }}">{{ .Topic }}</a></li>
+        {{ end }}
+    </ul>
+</main>
 </body>
 </html>
+
+<!--<h1>Skuf aller Länder, vereinigt Euch!</h1>-->
+<!--<p>Rate your Skuf level from 8 to 10.</p>-->

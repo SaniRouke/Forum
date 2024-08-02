@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Post</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+{{ template "nav" . }}
+<div class="container">
+    <h1>Create a New Post</h1>
+    <form method="post" action="/create">
+        <label for="topic">Topic:</label>
+        <input type="text" id="topic" name="topic" required>
+        <br>
+        <label for="body">Body:</label>
+        <textarea id="body" name="body" required></textarea>
+        <br>
+        <button type="submit">Create Post</button>
+    </form>
+</div>
+</body>
+</html>
