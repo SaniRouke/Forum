@@ -3,6 +3,7 @@ package main
 import (
 	"forum/cmd/utils"
 	"forum/internal"
+	embed "forum/ui/html"
 	"html/template"
 	"log"
 	"net/http"
@@ -14,12 +15,12 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./ui/html/home.html", "./ui/html/nav.html")
+	tmpl, err := template.ParseFS(embed.HTMLFiles, "home.html", "nav.html")
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	allPosts := internal.Read()
+	allPosts := internal.ShowPosts()
 
 	data := struct {
 		Posts []internal.Post
@@ -54,7 +55,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./ui/html/post.html", "./ui/html/nav.html")
+	tmpl, err := template.ParseFS(embed.HTMLFiles, "post.html", "nav.html")
 	if err != nil {
 		log.Print(err)
 		return
@@ -70,7 +71,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 
 func handlerCreatePost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		tmpl, err := template.ParseFiles("./ui/html/create.html", "./ui/html/nav.html")
+		tmpl, err := template.ParseFS(embed.HTMLFiles, "create.html", "nav.html")
 		if err != nil {
 			log.Print(err)
 			return
@@ -83,7 +84,7 @@ func handlerCreatePost(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == http.MethodPost {
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
-		err := internal.Create(topic, body)
+		err := internal.CreatePost(topic, body)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			return
