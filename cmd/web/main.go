@@ -1,6 +1,7 @@
 package main
 
 import (
+	"forum/cmd/utils"
 	"log"
 	"net/http"
 )
@@ -13,7 +14,7 @@ func main() {
 	mux.HandleFunc("/create", handlerCreatePost)
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
 
 	log.Println("Listening on http://localhost:8080...")
 	serverErr := http.ListenAndServe(":8080", mux)
