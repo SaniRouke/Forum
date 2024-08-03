@@ -114,3 +114,45 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+/* Error page styles */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.error-code {
+    font-size: 3em;
+    font-weight: bold;
+    color: #FF0000; /* Red color for error code */
+    font-family: 'Arial Black', sans-serif; /* Fancy font for error code */
+}
+
+.error-message {
+    font-size: 1.5em;
+    color: #333;
+    font-family: 'Arial', sans-serif; /* Fancy font for error message */
+    margin-bottom: 20px;
+}
+
+.error-back-button {
+    margin-top: 20px;
+}
+
+.back-button {
+    background-color: #007BFF;
+    color: #fff;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}

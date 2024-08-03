@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Error</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-<div class="error-container">
-    <div class="error-frame">
-        <div class="error-code">{{.Code}}</div>
-        <div class="error-message">{{.Message}}</div>
+{{ template "nav" . }}
+<div class="container">
+    <div class="error-container">
+        <div class="error-frame">
+            <div class="error-code">{{.Code}}</div>
+            <div class="error-message">{{.Message}}</div>
+        </div>
+        <div class="error-back-button">
+            <a href="/" class="back-button">Go home, skuf</a>
+        </div>
     </div>
-
-</div>
-<div class="error-back-button">
-    <a href="/" class="back-button">Go home, skuf</a>
 </div>
 </body>
 </html>
