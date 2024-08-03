@@ -20,7 +20,7 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
-	allPosts := internal.ShowPosts()
+	allPosts := internal.GetAllPosts()
 
 	data := struct {
 		Posts []internal.Post
