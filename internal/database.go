@@ -12,7 +12,7 @@ type Post struct {
 	Body  string
 }
 
-func Create(topic string, body string) error {
+func CreatePost(topic string, body string) error {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func Create(topic string, body string) error {
 	return nil
 }
 
-func Read() []Post {
+func ShowPosts() []Post {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		log.Fatal(err)
