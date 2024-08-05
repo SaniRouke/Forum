@@ -28,7 +28,7 @@ func CreatePost(topic string, body string) error {
 	return nil
 }
 
-func ShowPosts() []Post {
+func GetAllPosts() []Post {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +76,7 @@ func GetPost(id string) (Post, error) {
 	return post, nil
 }
 
-func Update(name string, email string, id int) {
+func UpdatePost(id int, topic string, body string) {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		log.Fatal(err)
@@ -84,13 +84,13 @@ func Update(name string, email string, id int) {
 	defer db.Close()
 
 	updateUserSQL := `UPDATE posts SET topic = ?, body = ? WHERE id = ?`
-	_, err = db.Exec(updateUserSQL, name, email, id)
+	_, err = db.Exec(updateUserSQL, topic, body, id)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func Delete(id int) {
+func DeletePost(id int) {
 	db, err := sql.Open("sqlite3", "./database.db")
 	if err != nil {
 		log.Fatal(err)
