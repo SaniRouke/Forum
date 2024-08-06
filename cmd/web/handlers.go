@@ -3,24 +3,22 @@ package main
 import (
 	"forum/cmd/utils"
 	"forum/internal"
-	embed "forum/ui/html"
-	"html/template"
 	"log"
 	"net/http"
 )
 
 func handlerHome(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		utils.ErrorPage(w, http.StatusNotFound, "page not found")
+		utils.ErrorPage(w, http.StatusNotFound, "Page not found")
 		return
 	}
 
-	tmpl, err := template.ParseFS(embed.HTMLFiles, "home.html", "nav.html")
+	allPosts, err := internal.GetAllPosts()
 	if err != nil {
-		log.Print(err)
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
+		log.Println(err)
 		return
 	}
-	allPosts := internal.GetAllPosts()
 
 	data := struct {
 		Posts []internal.Post
@@ -28,11 +26,9 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 		Posts: allPosts,
 	}
 
-	err = tmpl.ExecuteTemplate(w, "home.html", data)
+	err = utils.RenderTemplate(w, "home.html", data, http.StatusOK)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Print(err)
-		return
+		log.Println(err)
 	}
 }
 
@@ -46,7 +42,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	post, err := internal.GetPost(id)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Print(err)
+		log.Println(err)
 		return
 	}
 
@@ -55,38 +51,26 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFS(embed.HTMLFiles, "post.html", "nav.html")
+	err = utils.RenderTemplate(w, "post.html", post, http.StatusOK)
 	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	err = tmpl.ExecuteTemplate(w, "post.html", post)
-	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Print(err)
-		return
+		log.Println(err)
 	}
 }
 
 func handlerCreatePost(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		tmpl, err := template.ParseFS(embed.HTMLFiles, "create.html", "nav.html")
+	switch {
+	case r.Method == http.MethodGet:
+		err := utils.RenderTemplate(w, "create.html", nil, http.StatusOK)
 		if err != nil {
-			log.Print(err)
-			return
+			log.Println(err)
 		}
-		err = tmpl.ExecuteTemplate(w, "create.html", nil)
-		if err != nil {
-			log.Print(err)
-			return
-		}
-	} else if r.Method == http.MethodPost {
+	case r.Method == http.MethodPost:
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
 		err := internal.CreatePost(topic, body)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
+			log.Println(err)
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)

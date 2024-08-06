@@ -2,6 +2,7 @@ package main
 
 import (
 	"forum/cmd/utils"
+	"forum/internal"
 	"log"
 	"net/http"
 )
@@ -15,6 +16,11 @@ func main() {
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
+
+	err := internal.InitializeDB("./database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Listening on http://localhost:8080...")
 	serverErr := http.ListenAndServe(":8080", mux)

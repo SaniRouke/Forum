@@ -9,16 +9,33 @@ import (
 	"strings"
 )
 
-func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
-
-	tmpl, err := template.ParseFS(embed.HTMLFiles, "error.html", "nav.html")
-
+func RenderTemplate(w http.ResponseWriter, tmplName string, data any, statusCode int) error {
+	templates, err := template.ParseFS(embed.HTMLFiles, tmplName, "nav.html")
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		log.Print(err)
-		return
+		return err
 	}
 
+	var buf bytes.Buffer
+	err = templates.ExecuteTemplate(&buf, tmplName, data)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		log.Print(err)
+		return err
+	}
+
+	w.WriteHeader(statusCode)
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	return nil
+}
+
+func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
 	data := struct {
 		Code    int
 		Message string
@@ -27,17 +44,9 @@ func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
 		Message: statusMessage,
 	}
 
-	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, "error.html", data)
+	err := RenderTemplate(w, "error.html", data, statusCode)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		log.Print(err)
-		return
-	}
-	w.WriteHeader(statusCode)
-	_, err = buf.WriteTo(w)
-	if err != nil {
-		return
 	}
 }
 
