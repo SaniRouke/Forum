@@ -4,17 +4,18 @@ package utils
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestErrorPage(t *testing.T) {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	//req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ErrorPage(rec, http.StatusNotFound, "page not found")
 
-	if status := rec.Code; status != http.StatusNotFound {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusNotFound)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("handler returned wrong status code: got %v want %v", rec.Code, http.StatusNotFound)
 	}
 
 	expected := "page not found"
@@ -46,5 +47,27 @@ func TestNeuter(t *testing.T) {
 		if status := rr.Code; status != test.expectedCode {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, test.expectedCode)
 		}
+	}
+}
+
+func TestNeuter1(t *testing.T) {
+
+	type args struct {
+		next http.Handler
+	}
+	tests := []struct {
+		name string
+		args args
+		want http.Handler
+	}{
+		// TODO: Add test cases.
+
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Neuter(tt.args.next); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Neuter() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
