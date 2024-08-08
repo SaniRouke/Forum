@@ -11,7 +11,6 @@ import (
 
 func TestErrorPage(t *testing.T) {
 	rec := httptest.NewRecorder()
-	//req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	ErrorPage(rec, http.StatusNotFound, "page not found")
 
 	if rec.Code != http.StatusNotFound {

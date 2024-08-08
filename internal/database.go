@@ -63,13 +63,13 @@ func GetPost(id string) (Post, error) {
 	return post, err
 }
 
-func UpdatePost(id int, topic, body string) error {
+func EditPost(id string, topic, body string) error {
 	query := "UPDATE posts SET topic = ?, body = ? WHERE id = ?;"
 	_, err := DB.Exec(query, topic, body, id)
 	return err
 }
 
-func DeletePost(id int) error {
+func DeletePost(id string) error {
 	query := "DELETE FROM posts WHERE id = ?;"
 	_, err := DB.Exec(query, id)
 	return err

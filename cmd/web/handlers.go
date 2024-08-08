@@ -76,3 +76,61 @@ func handlerCreatePost(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
+
+func handlerDeletePost(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	err := internal.DeletePost(id)
+	if err != nil {
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+		log.Println(err)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func handlerEditPost(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		post, err := internal.GetPost(id)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+			log.Println(err)
+			return
+		}
+
+		if post.ID == 0 {
+			utils.ErrorPage(w, http.StatusNotFound, "Post not found")
+			return
+		}
+
+		err = utils.RenderTemplate(w, "edit.html", post, http.StatusOK)
+		if err != nil {
+			log.Println(err)
+		}
+
+	case http.MethodPost:
+		topic := r.FormValue("topic")
+		body := r.FormValue("body")
+
+		err := internal.EditPost(id, topic, body)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+			log.Println(err)
+			return
+		}
+
+		http.Redirect(w, r, "/post?id="+id, http.StatusSeeOther)
+	}
+}

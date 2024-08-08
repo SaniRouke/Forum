@@ -9,16 +9,24 @@ import (
 	"strings"
 )
 
-func RenderTemplate(w http.ResponseWriter, tmplName string, data any, statusCode int) error {
-	templates, err := template.ParseFS(embed.HTMLFiles, tmplName, "nav.html")
+var templates *template.Template
+
+func CachingTemplates() error {
+	var err error
+	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "edit.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html")
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		log.Print(err)
 		return err
 	}
+	return nil
+}
 
+func RenderTemplate(w http.ResponseWriter, tmplName string, data any, statusCode int) error {
+	if templates == nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return nil
+	}
 	var buf bytes.Buffer
-	err = templates.ExecuteTemplate(&buf, tmplName, data)
+	err := templates.ExecuteTemplate(&buf, tmplName, data)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		log.Print(err)
