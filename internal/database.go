@@ -2,9 +2,25 @@ package internal
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 )
+
+var DB *sql.DB
+
+func InitializeDB(dataSourceName string) error {
+	var err error
+	DB, err = sql.Open("sqlite3", dataSourceName)
+	if err != nil {
+		return fmt.Errorf("failed to open database: %v", err)
+	}
+
+	err = DB.Ping()
+	if err != nil {
+		return fmt.Errorf("failed to ping database: %v", err)
+	}
+	return nil
+}
 
 type Post struct {
 	ID    int
@@ -12,94 +28,49 @@ type Post struct {
 	Body  string
 }
 
-func Create(topic string, body string) error {
-	db, err := sql.Open("sqlite3", "./database.db")
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
+func CreatePost(topic, body string) error {
 	query := "INSERT INTO posts (topic, body) VALUES (?, ?);"
-	_, err = db.Exec(query, topic, body)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := DB.Exec(query, topic, body)
+	return err
 }
 
-func Read() []Post {
-	db, err := sql.Open("sqlite3", "./database.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	var posts []Post
-
+func GetAllPosts() ([]Post, error) {
 	query := "SELECT id, topic, body FROM posts;"
-	rows, err := db.Query(query)
+	rows, err := DB.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer rows.Close()
 
+	var posts []Post
 	for rows.Next() {
 		var post Post
-		err := rows.Scan(&post.ID, &post.Topic, &post.Body)
-		if err != nil {
-			log.Fatal(err)
+		if err = rows.Scan(&post.ID, &post.Topic, &post.Body); err != nil {
+			return nil, err
 		}
 		posts = append(posts, post)
 	}
-	return posts
+	return posts, nil
 }
 
 func GetPost(id string) (Post, error) {
-	db, err := sql.Open("sqlite3", "./database.db")
-	if err != nil {
-		return Post{}, err
-	}
-	defer db.Close()
-
 	var post Post
-
 	query := "SELECT id, topic, body FROM posts WHERE id = ?;"
-	err = db.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return Post{}, nil
-		}
-		return Post{}, err
+	err := DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body)
+	if err == sql.ErrNoRows {
+		return Post{}, nil
 	}
-
-	return post, nil
+	return post, err
 }
 
-func Update(name string, email string, id int) {
-	db, err := sql.Open("sqlite3", "./database.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	updateUserSQL := `UPDATE posts SET topic = ?, body = ? WHERE id = ?`
-	_, err = db.Exec(updateUserSQL, name, email, id)
-	if err != nil {
-		log.Fatal(err)
-	}
+func EditPost(id string, topic, body string) error {
+	query := "UPDATE posts SET topic = ?, body = ? WHERE id = ?;"
+	_, err := DB.Exec(query, topic, body, id)
+	return err
 }
 
-func Delete(id int) {
-	db, err := sql.Open("sqlite3", "./database.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	deleteUserSQL := `DELETE FROM posts WHERE id = ?`
-	_, err = db.Exec(deleteUserSQL, id)
-	if err != nil {
-		log.Fatal(err)
-	}
+func DeletePost(id string) error {
+	query := "DELETE FROM posts WHERE id = ?;"
+	_, err := DB.Exec(query, id)
+	return err
 }

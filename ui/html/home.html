@@ -7,11 +7,12 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Forum - Home</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" type="image/webp" href="/static/images/doom_fav.webp">
  </head>
 <body>
 {{ template "nav" . }}
 <main class="container">
-    <h1>Skuforum</h1>
+    <h1>Skuf.forum</h1>
     <ul>
         {{ range .Posts }}
         <li><a href="/post?id={{ .ID }}">{{ .Topic }}</a></li>
@@ -21,5 +22,3 @@
 </body>
 </html>
 
-<!--<h1>Skuf aller Länder, vereinigt Euch!</h1>-->
-<!--<p>Rate your Skuf level from 8 to 10.</p>-->

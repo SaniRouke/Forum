@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Post</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" type="image/webp" href="/static/images/doom_fav.webp">
+</head>
+<body>
+{{ template "nav" . }}
+<main class="container">
+  <h1>Edit Post</h1>
+  <form action="/edit?id={{ .ID }}" method="post">
+    <label for="topic">Topic:</label>
+    <input type="text" id="topic" name="topic" value="{{ .Topic }}" required>
+    <label for="body">Body:</label>
+    <textarea id="body" name="body" required>{{ .Body }}</textarea>
+    <button type="submit">Submit</button>
+  </form>
+</main>
+</body>
+</html>

@@ -1,23 +1,49 @@
 package utils
 
 import (
+	"bytes"
+	embed "forum/ui/html"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 )
 
-func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
-	tmpl, err := template.ParseFiles("./ui/html/error.html")
+var templates *template.Template
 
+func CachingTemplates() error {
+	var err error
+	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "edit.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RenderTemplate(w http.ResponseWriter, tmplName string, data any, statusCode int) error {
+	if templates == nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return nil
+	}
+	var buf bytes.Buffer
+	err := templates.ExecuteTemplate(&buf, tmplName, data)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		log.Print(err)
-		return
+		return err
 	}
 
 	w.WriteHeader(statusCode)
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
 
+	return nil
+}
+
+func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
 	data := struct {
 		Code    int
 		Message string
@@ -25,12 +51,10 @@ func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
 		Code:    statusCode,
 		Message: statusMessage,
 	}
-	err = tmpl.Execute(w, data)
 
+	err := RenderTemplate(w, "error.html", data, statusCode)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		log.Print(err)
-		return
 	}
 }
 

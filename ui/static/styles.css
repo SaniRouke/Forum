@@ -14,7 +14,7 @@ body {
 
 /* Navigation styles */
 nav {
-    background-color: #007BFF;
+    background-color: #dba738;
     color: #fff;
     padding: 15px 20px;
     display: flex;
@@ -57,7 +57,7 @@ li {
 }
 
 li a {
-    color: #007BFF;
+    color: #000000;
     text-decoration: none;
     font-size: 1.2em;
 }
@@ -109,8 +109,97 @@ button {
     font-size: 1em;
     cursor: pointer;
     border-radius: 5px;
+    width: auto;
 }
 
 button:hover {
     background-color: #0056b3;
 }
+
+.delete-button, .edit-button {
+    background-color: rgba(128, 128, 128, 0.5); /* grey and translucent */
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px; /* Reduce font size */
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+    width: auto; /* Ensure the button width is auto */
+}
+
+.delete-button:hover, .edit-button:hover {
+    background-color: rgba(128, 128, 128, 0.8); /* slightly less translucent on hover */
+}
+
+/* Error page styles */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+    text-align: center;
+}
+
+.error-code {
+    font-size: 3em;
+    font-weight: bold;
+    color: #FF0000; /* Red color for error code */
+    font-family: 'Arial Black', sans-serif; /* Fancy font for error code */
+}
+
+.error-message {
+    font-size: 1.5em;
+    color: #333;
+    font-family: 'Arial', sans-serif; /* Fancy font for error message */
+    margin-bottom: 20px;
+}
+
+.error-back-button {
+    margin-top: 20px;
+}
+
+.back-button {
+    background-color: #007BFF;
+    color: #fff;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}
+
+.post-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px; /* Add some space above the buttons */
+}
+
+/* Ensure all action buttons have the same size and appearance */
+.action-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;  /* Adjust padding for uniform size */
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 5px;
+    text-align: center;
+    text-decoration: none; /* For the "Go back" link */
+    width: auto;
+    min-width: 100px; /* Ensures the buttons have the same minimum width */
+}
+
+.action-button:hover {
+    background-color: #0056b3;
+}
+
+

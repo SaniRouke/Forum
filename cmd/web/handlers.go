@@ -3,23 +3,22 @@ package main
 import (
 	"forum/cmd/utils"
 	"forum/internal"
-	"html/template"
 	"log"
 	"net/http"
 )
 
 func handlerHome(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		utils.ErrorPage(w, http.StatusNotFound, "page not found")
+		utils.ErrorPage(w, http.StatusNotFound, "Page not found")
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./ui/html/home.html", "./ui/html/nav.html")
+	allPosts, err := internal.GetAllPosts()
 	if err != nil {
-		log.Print(err)
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
+		log.Println(err)
 		return
 	}
-	allPosts := internal.Read()
 
 	data := struct {
 		Posts []internal.Post
@@ -27,11 +26,9 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 		Posts: allPosts,
 	}
 
-	err = tmpl.ExecuteTemplate(w, "home.html", data)
+	err = utils.RenderTemplate(w, "home.html", data, http.StatusOK)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Print(err)
-		return
+		log.Println(err)
 	}
 }
 
@@ -45,7 +42,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	post, err := internal.GetPost(id)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Print(err)
+		log.Println(err)
 		return
 	}
 
@@ -54,40 +51,86 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./ui/html/post.html", "./ui/html/nav.html")
+	err = utils.RenderTemplate(w, "post.html", post, http.StatusOK)
 	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	err = tmpl.ExecuteTemplate(w, "post.html", post)
-	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Print(err)
-		return
+		log.Println(err)
 	}
 }
 
 func handlerCreatePost(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		tmpl, err := template.ParseFiles("./ui/html/create.html", "./ui/html/nav.html")
+	switch {
+	case r.Method == http.MethodGet:
+		err := utils.RenderTemplate(w, "create.html", nil, http.StatusOK)
 		if err != nil {
-			log.Print(err)
-			return
+			log.Println(err)
 		}
-		err = tmpl.ExecuteTemplate(w, "create.html", nil)
-		if err != nil {
-			log.Print(err)
-			return
-		}
-	} else if r.Method == http.MethodPost {
+	case r.Method == http.MethodPost:
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
-		err := internal.Create(topic, body)
+		err := internal.CreatePost(topic, body)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
+			log.Println(err)
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func handlerDeletePost(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	err := internal.DeletePost(id)
+	if err != nil {
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+		log.Println(err)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func handlerEditPost(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		post, err := internal.GetPost(id)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+			log.Println(err)
+			return
+		}
+
+		if post.ID == 0 {
+			utils.ErrorPage(w, http.StatusNotFound, "Post not found")
+			return
+		}
+
+		err = utils.RenderTemplate(w, "edit.html", post, http.StatusOK)
+		if err != nil {
+			log.Println(err)
+		}
+
+	case http.MethodPost:
+		topic := r.FormValue("topic")
+		body := r.FormValue("body")
+
+		err := internal.EditPost(id, topic, body)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+			log.Println(err)
+			return
+		}
+
+		http.Redirect(w, r, "/post?id="+id, http.StatusSeeOther)
 	}
 }
