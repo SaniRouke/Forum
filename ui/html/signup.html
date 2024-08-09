@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+{{ template "nav" . }}
+<main class="container">
+    <h1>Sign Up</h1>
+    <form method="POST" action="/signup">
+        <form method="post" action="/signup">
+            <label for="username">Username:</label>
+            <input type="text" name="username" placeholder="Username" required>
+            <label for="email">Email:</label>
+            <input type="email" name="email" placeholder="Email" required>
+            <label for="password">Password:</label>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit" class="action-button">Sign Up</button>
+        </form>
+    </form>
+</main>
+</body>
+</html>
+
+
+
