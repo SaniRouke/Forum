@@ -23,6 +23,10 @@ func main() {
 	mux.HandleFunc("POST /delete", handlerDeletePost)
 	mux.HandleFunc("GET /edit", handlerEditPost)
 	mux.HandleFunc("POST /edit", handlerEditPost)
+	mux.HandleFunc("GET /login", handlerLogin)
+	mux.HandleFunc("POST /login", handlerLogin)
+	mux.HandleFunc("GET /signup", handlerSignup)
+	mux.HandleFunc("POST /signup", handlerSignup)
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
