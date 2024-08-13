@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Forum - Home</title>
+    <title>Skuf Home</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" type="image/webp" href="/static/images/doom_fav.webp">
  </head>
 <body>
 {{ template "nav" . }}
 <main class="container">
-    <h1>Skuf.forum</h1>
+    <h1>Skuf.life is an online forum dedicated to our lives. You are welcome to share your stories, thoughts and worries. We the Skufs!</h1>
     <ul>
         {{ range .Posts }}
         <li><a href="/post?id={{ .ID }}">{{ .Topic }}</a></li>
@@ -18,4 +18,6 @@
 </main>
 </body>
 </html>
+
+Skuf.life is the first online forum created by skufs for skufs. You are welcome to share your stories, thoughts and worries.
 
