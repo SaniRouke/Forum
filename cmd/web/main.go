@@ -3,7 +3,7 @@ package main
 import (
 	"forum/cmd/handlers"
 	"forum/cmd/utils"
-	"forum/internal"
+	"forum/database"
 	"log"
 	"net/http"
 )
@@ -32,7 +32,7 @@ func main() {
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
 
-	err = internal.InitializeDB("./database.db")
+	err = db.InitializeDB("./database.db")
 	if err != nil {
 		log.Fatal(err)
 	}

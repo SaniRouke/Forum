@@ -2,7 +2,7 @@ package hdl
 
 import (
 	"forum/cmd/utils"
-	"forum/internal"
+	db "forum/database"
 	"log"
 	"net/http"
 )
@@ -18,7 +18,7 @@ func HandlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allPosts, err := internal.GetAllPosts()
+	allPosts, err := db.GetAllPosts()
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
 		log.Println(err)
@@ -26,7 +26,7 @@ func HandlerHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Posts []internal.Post
+		Posts []db.Post
 	}{
 		Posts: allPosts,
 	}
@@ -44,7 +44,7 @@ func HandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := internal.GetPost(id)
+	post, err := db.GetPost(id)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
@@ -72,7 +72,7 @@ func HandlerCreatePost(w http.ResponseWriter, r *http.Request) {
 	case r.Method == http.MethodPost:
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
-		err := internal.CreatePost(topic, body)
+		err := db.CreatePost(topic, body)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			log.Println(err)
@@ -89,7 +89,7 @@ func HandlerDeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := internal.DeletePost(id)
+	err := db.DeletePost(id)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
@@ -108,7 +108,7 @@ func HandlerEditPost(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		post, err := internal.GetPost(id)
+		post, err := db.GetPost(id)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 			log.Println(err)
@@ -129,7 +129,7 @@ func HandlerEditPost(w http.ResponseWriter, r *http.Request) {
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
 
-		err := internal.EditPost(id, topic, body)
+		err := db.EditPost(id, topic, body)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 			log.Println(err)

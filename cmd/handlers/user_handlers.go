@@ -2,7 +2,7 @@ package hdl
 
 import (
 	"forum/cmd/utils"
-	"forum/internal"
+	"forum/database"
 	"log"
 	"net/http"
 )
@@ -21,7 +21,7 @@ func HandlerSignup(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
-		err := internal.CreateUser(username, email, password)
+		err := db.CreateUser(username, email, password)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "Unable to create user")
 			log.Println(err)
@@ -45,7 +45,7 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		identifier := r.FormValue("username") // Can be username or email
 		password := r.FormValue("password")
 
-		isAuthenticated, err := internal.AuthenticateUser(identifier, password)
+		isAuthenticated, err := db.AuthenticateUser(identifier, password)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			log.Println("Error in authentication:", err)
