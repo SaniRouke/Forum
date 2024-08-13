@@ -1,6 +1,7 @@
 package main
 
 import (
+	"forum/cmd/handlers"
 	"forum/cmd/utils"
 	"forum/internal"
 	"log"
@@ -16,17 +17,17 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", handlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
-	mux.HandleFunc("GET /post", handlerPost)
-	mux.HandleFunc("GET /create", handlerCreatePost)
-	mux.HandleFunc("POST /create", handlerCreatePost)
-	mux.HandleFunc("POST /delete", handlerDeletePost)
-	mux.HandleFunc("GET /edit", handlerEditPost)
-	mux.HandleFunc("POST /edit", handlerEditPost)
-	mux.HandleFunc("GET /login", handlerLogin)
-	mux.HandleFunc("POST /login", handlerLogin)
-	mux.HandleFunc("GET /signup", handlerSignup)
-	mux.HandleFunc("POST /signup", handlerSignup)
+	mux.HandleFunc("/", hdl.HandlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
+	mux.HandleFunc("GET /post", hdl.HandlerPost)
+	mux.HandleFunc("GET /create", hdl.HandlerCreatePost)
+	mux.HandleFunc("POST /create", hdl.HandlerCreatePost)
+	mux.HandleFunc("POST /delete", hdl.HandlerDeletePost)
+	mux.HandleFunc("GET /edit", hdl.HandlerEditPost)
+	mux.HandleFunc("POST /edit", hdl.HandlerEditPost)
+	mux.HandleFunc("GET /login", hdl.HandlerLogin)
+	mux.HandleFunc("POST /login", hdl.HandlerLogin)
+	mux.HandleFunc("GET /signup", hdl.HandlerSignup)
+	mux.HandleFunc("POST /signup", hdl.HandlerSignup)
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
@@ -37,6 +38,6 @@ func main() {
 	}
 
 	log.Println("Listening on http://localhost:8080...")
-	serverErr := http.ListenAndServe(":8080", mux)
+	serverErr := http.ListenAndServe(":80", mux)
 	log.Fatal(serverErr)
 }

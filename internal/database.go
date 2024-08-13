@@ -48,7 +48,7 @@ func CreateUser(username, email, password string) error {
 	log.Printf("Normalized username: %s", username)
 	log.Printf("Normalized email: %s", email)
 
-	// Check if username or email already exists
+	// Check if username or email already existsy
 	var count int
 	var existingEmail sql.NullString
 

@@ -1,5 +1,5 @@
 // main_test.go
-package main
+package hdl
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ func TestHandlerHome(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlerHome)
+	handler := http.HandlerFunc(HandlerHome)
 
 	handler.ServeHTTP(rr, req)
 
@@ -38,7 +38,7 @@ func TestHandlerPost(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlerPost)
+	handler := http.HandlerFunc(HandlerPost)
 
 	handler.ServeHTTP(rr, req)
 
@@ -59,7 +59,7 @@ func TestHandlerCreatePost_Get(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlerCreatePost)
+	handler := http.HandlerFunc(HandlerCreatePost)
 
 	handler.ServeHTTP(rr, req)
 
@@ -84,7 +84,7 @@ func TestHandlerCreatePost_Post(t *testing.T) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlerCreatePost)
+	handler := http.HandlerFunc(HandlerCreatePost)
 
 	handler.ServeHTTP(rr, req)
 
