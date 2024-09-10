@@ -5,7 +5,7 @@
 
 ## Usage
 
-The project is written with **Go version 1.22.5**. If you have older version of Go use **Docker** to run our forum.
+The project is written with **Go version 1.23.1**. If you have older version of Go use **Docker** to run our forum.
 
 Skuf aller Länder, vereinigt Euch!
 Rate your Skuf level from 8 to 10.

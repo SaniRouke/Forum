@@ -116,6 +116,17 @@ button:hover {
     background-color: #0056b3;
 }
 
+/* Form input styles */
+.input-field {
+    width: 100%; /* Ensures the fields take up the full width of the container */
+    margin-bottom: 20px;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
 .delete-button, .edit-button {
     background-color: rgba(128, 128, 128, 0.5); /* grey and translucent */
     border: none;
