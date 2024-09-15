@@ -20,9 +20,22 @@ type User struct {
 }
 
 type Post struct {
-	ID    int
-	Topic string
-	Body  string
+	ID       int
+	Author   string
+	Topic    string
+	Body     string
+	Date     string
+	Comments []Comment
+	// Likes
+}
+
+type Comment struct {
+	ID     int
+	PostID int
+	Author string
+	Body   string
+	Date   string
+	// Likes
 }
 
 func InitializeDB(dataSourceName string) error {
@@ -110,6 +123,16 @@ func AuthenticateUser(identifier, password string) (bool, error) {
 	return true, nil
 }
 
+func GetUser(username string) (User, error) {
+	var user User
+	query := "SELECT id, username, email, password_hash FROM users WHERE username = ?;"
+	err := DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+	if err == sql.ErrNoRows {
+		return User{}, nil
+	}
+	return user, err
+}
+
 func CreatePost(topic, body string) error {
 	query := "INSERT INTO posts (topic, body) VALUES (?, ?);"
 	_, err := DB.Exec(query, topic, body)
@@ -145,14 +168,28 @@ func GetPost(id string) (Post, error) {
 	return post, err
 }
 
-func EditPost(id string, topic, body string) error {
-	query := "UPDATE posts SET topic = ?, body = ? WHERE id = ?;"
-	_, err := DB.Exec(query, topic, body, id)
-	return err
+func GetComments(id string) ([]Comment, error) {
+	query := "SELECT id, post_id, author, body, date FROM comments WHERE post_id = ?"
+	rows, err := DB.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []Comment
+
+	for rows.Next() {
+		var comment Comment
+		if err = rows.Scan(&comment.ID, &comment.PostID, &comment.Author, &comment.Body, &comment.Date); err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+	return comments, nil
 }
 
-func DeletePost(id string) error {
-	query := "DELETE FROM posts WHERE id = ?;"
-	_, err := DB.Exec(query, id)
+func AddComment(postID int, userID int, commentBody string, date string) error {
+	query := "INSERT INTO comments (post_id, author, body, date) VALUES (?, ?, ?, ?)"
+	_, err := DB.Exec(query, postID, userID, commentBody, date)
 	return err
 }

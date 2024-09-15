@@ -3,7 +3,14 @@
 <nav class="header_nav">
     <a href="/">Home</a>
     <a href="/create">Create Post</a>
-    <a href="/login">Login</a> <!-- Add login link for future implementation -->
-    <a href="/signup">Sign Up</a> <!-- Add settings link for future implementation -->
+    {{if .User.IsAuth}}
+    <a>{{.User.Name}}</a>
+    <form action="/logout" method="post" style="display: inline;">
+        <button type="submit" class="nav-logout-button">Log Out</button>
+    </form>
+    {{else}}
+    <a href="/signup">Sign Up</a>
+    <a href="/login">Login</a>
+    {{end}}
 </nav>
 {{end}}

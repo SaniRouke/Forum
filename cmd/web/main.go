@@ -7,6 +7,15 @@ import (
 	"net/http"
 )
 
+type Application struct {
+	User User
+}
+
+type User struct {
+	Name   string
+	IsAuth bool
+}
+
 func main() {
 
 	err := utils.CachingTemplates()
@@ -14,19 +23,20 @@ func main() {
 		log.Fatal("Failed to initialize templates:", err)
 	}
 
+	app := Application{}
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", handlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
-	mux.HandleFunc("GET /post", handlerPost)
-	mux.HandleFunc("GET /create", handlerCreatePost)
-	mux.HandleFunc("POST /create", handlerCreatePost)
-	mux.HandleFunc("POST /delete", handlerDeletePost)
-	mux.HandleFunc("GET /edit", handlerEditPost)
-	mux.HandleFunc("POST /edit", handlerEditPost)
-	mux.HandleFunc("GET /login", handlerLogin)
-	mux.HandleFunc("POST /login", handlerLogin)
-	mux.HandleFunc("GET /signup", handlerSignup)
-	mux.HandleFunc("POST /signup", handlerSignup)
+	mux.HandleFunc("/", app.handlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
+	mux.HandleFunc("GET /post", app.handlerPostView)
+	mux.HandleFunc("POST /comment", app.handlerComment)
+	mux.HandleFunc("GET /create", app.handlerCreatePost)
+	mux.HandleFunc("POST /create", app.handlerCreatePost)
+	mux.HandleFunc("GET /signup", app.handlerSignup)
+	mux.HandleFunc("POST /signup", app.handlerSignup)
+	mux.HandleFunc("GET /login", app.handlerLogin)
+	mux.HandleFunc("POST /login", app.handlerLogin)
+	mux.HandleFunc("POST /logout", app.handlerLogout)
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))

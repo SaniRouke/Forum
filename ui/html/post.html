@@ -2,33 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ .Topic }}</title>
+    <title>{{ .Post.Topic }}</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" href="/static/images/doom_fav.webp" type="image/webp">
 </head>
 <body>
 {{ template "nav" . }}
 <main class="container">
-    <h1>{{ .Topic }}</h1>
-    <p>{{ .Body }}</p>
+    <h1>{{ .Post.Topic }}</h1>
+    <p><pre>{{- .Post.Body -}}</pre></p>
+
+    <h2>Comments</h2>
+    <ul>
+        {{ range .Post.Comments }}
+        <li>
+            <p><strong>{{ .Author }}</strong>: {{ .Body }} ({{ .Date }})</p>
+        </li>
+        {{ else }}
+        <p>No comments yet. Be the first to comment!</p>
+        {{ end }}
+    </ul>
+    <h3>Add a Comment</h3>
+    <form method="POST" action="/comment">
+        <input type="hidden" name="post_id" value="{{ .Post.ID }}">
+        <label for="author">Your Name:</label>
+        <input type="text" id="author" name="author" required>
+
+        <label for="comment_body">Comment:</label>
+        <textarea id="comment_body" name="comment_body" required></textarea>
+
+        <button type="submit" class="action-button">Submit</button>
+    </form>
     <div class="post-buttons">
-        <form action="/delete?id={{ .ID }}" method="post">
-            <button type="submit" class="action-button">Delete</button>
-        </form>
-        <a href="/edit?id={{ .ID }}" class="action-button">Edit</a>
         <a href="/" class="action-button">Go back</a>
     </div>
 </main>
-
 </body>
 </html>
-
-
-
-<!--<form action="/delete?id={{ .ID }}" method="post">-->
-<!--    <button type="submit" class="action-button">Delete</button>-->
-<!--</form>-->
-<!--<form action="/edit?id={{ .ID }}" method="get">-->
-<!--    <button type="submit" class="action-button">Edit</button>-->
-<!--</form>-->
-<!--<a href="/" class="action-button">Go back</a>-->
