@@ -9,11 +9,16 @@ import (
 	"strings"
 )
 
+type User struct {
+	Name   string
+	IsAuth bool
+}
+
 var templates *template.Template
 
 func CachingTemplates() error {
 	var err error
-	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "edit.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html")
+	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html")
 	if err != nil {
 		return err
 	}
@@ -44,9 +49,16 @@ func RenderTemplate(w http.ResponseWriter, tmplName string, data any, statusCode
 }
 
 func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
+
+	type UserToDelete struct {
+		Name   string
+		IsAuth bool
+	}
+
 	data := struct {
 		Code    int
 		Message string
+		User    UserToDelete
 	}{
 		Code:    statusCode,
 		Message: statusMessage,

@@ -101,9 +101,9 @@ textarea {
     resize: vertical;
 }
 
-button {
-    background-color: #007BFF;
-    color: #fff;
+button, .action-button {
+    background-color: #add8e6; /* Very light blue */
+    color: #000; /* Change text color to black for better contrast */
     border: none;
     padding: 10px 15px;
     font-size: 1em;
@@ -112,9 +112,10 @@ button {
     width: auto;
 }
 
-button:hover {
-    background-color: #0056b3;
+button:hover, .action-button:hover {
+    background-color: #87ceeb; /* Slightly darker light blue on hover */
 }
+
 
 /* Form input styles */
 .input-field {
@@ -175,7 +176,7 @@ button:hover {
 }
 
 .back-button {
-    background-color: #007BFF;
+    background-color: #87ceeb;
     color: #fff;
     padding: 10px 20px;
     text-decoration: none;
@@ -185,7 +186,7 @@ button:hover {
 }
 
 .back-button:hover {
-    background-color: #0056b3;
+    background-color: #87ceeb;
 }
 
 .post-buttons {
@@ -196,7 +197,7 @@ button:hover {
 
 /* Ensure all action buttons have the same size and appearance */
 .action-button {
-    background-color: #007BFF;
+    background-color: #87ceeb;
     color: white;
     border: none;
     padding: 10px 20px;  /* Adjust padding for uniform size */
@@ -210,7 +211,42 @@ button:hover {
 }
 
 .action-button:hover {
-    background-color: #0056b3;
+    background-color: #87ceeb;
 }
+
+/* Comment box styles */
+.comment-box {
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.comment-author {
+    font-weight: bold;
+    font-family: 'Georgia', serif; /* Different font */
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.comment-body {
+    font-size: 1em;
+    margin-bottom: 10px;
+}
+
+.comment-date {
+    font-size: 0.8em;
+    color: #6c757d; /* Gray color */
+    text-align: right;
+}
+
+/* Post content styles */
+.post-content {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
 
 

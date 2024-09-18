@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"strings"
+	"time"
 )
 
 var DB *sql.DB
@@ -52,7 +53,7 @@ func InitializeDB(dataSourceName string) error {
 	return nil
 }
 
-func CreateUser(username, email, password string) error {
+func CreateUser(username, email, password, dateOfCreation string) error {
 	// Normalize email and username by trimming spaces and converting to lowercase
 	email = strings.TrimSpace(strings.ToLower(email))
 	username = strings.TrimSpace(username)
@@ -87,8 +88,8 @@ func CreateUser(username, email, password string) error {
 	}
 
 	// Insert the user into the database
-	query = "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)"
-	_, err = DB.Exec(query, username, email, hashedPassword)
+	query = "INSERT INTO users (username, email, password_hash, date_of_creation) VALUES (?, ?, ?, ?)"
+	_, err = DB.Exec(query, username, email, hashedPassword, dateOfCreation)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
 	}
@@ -133,9 +134,10 @@ func GetUser(username string) (User, error) {
 	return user, err
 }
 
-func CreatePost(topic, body string) error {
-	query := "INSERT INTO posts (topic, body) VALUES (?, ?);"
-	_, err := DB.Exec(query, topic, body)
+func CreatePost(topic, body, author string) error {
+	date := time.Now().Format("2006-01-02 15:04:05")
+	query := "INSERT INTO posts (topic, body, author, date) VALUES (?, ?, ?, ?);"
+	_, err := DB.Exec(query, topic, body, author, date)
 	return err
 }
 
@@ -160,8 +162,8 @@ func GetAllPosts() ([]Post, error) {
 
 func GetPost(id string) (Post, error) {
 	var post Post
-	query := "SELECT id, topic, body FROM posts WHERE id = ?;"
-	err := DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body)
+	query := "SELECT id, topic, body, author, date FROM posts WHERE id = ?;"
+	err := DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}
@@ -188,8 +190,8 @@ func GetComments(id string) ([]Comment, error) {
 	return comments, nil
 }
 
-func AddComment(postID int, userID int, commentBody string, date string) error {
+func AddComment(postID int, author string, commentBody string, date string) error {
 	query := "INSERT INTO comments (post_id, author, body, date) VALUES (?, ?, ?, ?)"
-	_, err := DB.Exec(query, postID, userID, commentBody, date)
+	_, err := DB.Exec(query, postID, author, commentBody, date)
 	return err
 }

@@ -6,6 +6,7 @@ import (
 	"forum/internal"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -105,6 +106,8 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		User: user,
 	}
 
+	fmt.Println(data.Post)
+
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {
 		log.Println(err)
@@ -155,9 +158,34 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 		}
 	case r.Method == http.MethodPost:
+		userCookie, err := r.Cookie("user_name")
+		if err != nil {
+			log.Println(err)
+		}
+
+		if userCookie == nil {
+			http.Redirect(w, r, "login", http.StatusSeeOther)
+			return
+		}
+		if userCookie.Value == "" {
+			http.Redirect(w, r, "login", http.StatusSeeOther)
+			return
+		}
+
+		userNameCookie, err := r.Cookie("user_name")
+		if err != nil {
+			log.Println(err)
+		}
+
+		var user User
+
+		if userNameCookie != nil {
+			user.Name = userNameCookie.Value
+			user.IsAuth = true
+		}
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
-		err := internal.CreatePost(topic, body)
+		err = internal.CreatePost(topic, body, user.Name)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			log.Println(err)
@@ -189,13 +217,13 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = internal.AddComment(id, user.ID, commentBody, date)
+	err = internal.AddComment(id, user.Username, commentBody, date)
 	if err != nil {
-
 		utils.ErrorPage(w, http.StatusInternalServerError, "Unable to add comment")
 		log.Println(err)
 		return
 	}
+	fmt.Println(id, user.Username, commentBody, date)
 	http.Redirect(w, r, "/post?id="+postID, http.StatusSeeOther)
 
 }
@@ -209,12 +237,21 @@ func (app *Application) handlerSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var asciiRegex = regexp.MustCompile(`^[!-}]+$`)
+
 	if r.Method == http.MethodPost {
 		username := r.FormValue("username")
 		email := r.FormValue("email")
 		password := r.FormValue("password")
+		dateOfCreation := time.Now().Format("2006-01-02 15:04:05")
 
-		err := internal.CreateUser(username, email, password)
+		if !asciiRegex.MatchString(username) || !asciiRegex.MatchString(password) {
+			utils.ErrorPage(w, http.StatusBadRequest, "Username and password can only contain ASCII characters between 33 and 125.")
+			log.Println("Invalid username or password format.")
+			return
+		}
+
+		err := internal.CreateUser(username, email, password, dateOfCreation)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "Unable to create user")
 			log.Println(err)
@@ -244,6 +281,19 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		username := r.FormValue("username")
+		password := r.FormValue("password")
+
+		isAuthenticated, err := internal.AuthenticateUser(username, password)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+			log.Println(err)
+			return
+		}
+
+		if !isAuthenticated {
+			utils.ErrorPage(w, http.StatusUnauthorized, "Invalid username or password")
+			return
+		}
 
 		user, err := internal.GetUser(username)
 		if err != nil {

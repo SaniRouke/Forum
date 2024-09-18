@@ -10,29 +10,39 @@
 {{ template "nav" . }}
 <main class="container">
     <h1>{{ .Post.Topic }}</h1>
-    <p><pre>{{- .Post.Body -}}</pre></p>
+    <div class="post-content">
+        <p><pre>{{- .Post.Body -}}</pre></p>
 
+    </div>
+    {{ .Post.Author }}
+    {{ .Post.Date }}
     <h2>Comments</h2>
-    <ul>
-        {{ range .Post.Comments }}
-        <li>
-            <p><strong>{{ .Author }}</strong>: {{ .Body }} ({{ .Date }})</p>
-        </li>
-        {{ else }}
-        <p>No comments yet. Be the first to comment!</p>
-        {{ end }}
-    </ul>
+    {{ if .Post.Comments }}
+    {{ range .Post.Comments }}
+    <div class="comment-box">
+        <div class="comment-author">{{ .Author }}</div>
+        <div class="comment-body">{{ .Body }}</div>
+        <div class="comment-date">{{ .Date }}</div>
+    </div>
+    {{ end }}
+    {{ else }}
+    <p>No comments yet. Be the first to comment!</p>
+    {{ end }}
+
+    {{ if .User.IsAuth }}
     <h3>Add a Comment</h3>
     <form method="POST" action="/comment">
         <input type="hidden" name="post_id" value="{{ .Post.ID }}">
-        <label for="author">Your Name:</label>
-        <input type="text" id="author" name="author" required>
 
         <label for="comment_body">Comment:</label>
         <textarea id="comment_body" name="comment_body" required></textarea>
 
         <button type="submit" class="action-button">Submit</button>
     </form>
+    {{ else }}
+    <p>You must be logged in to add a comment.</p>
+    {{ end }}
+
     <div class="post-buttons">
         <a href="/" class="action-button">Go back</a>
     </div>

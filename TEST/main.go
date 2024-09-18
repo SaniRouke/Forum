@@ -25,8 +25,8 @@ func main() {
 	}
 
 	savva.Insert()
-	fmt.Println(savva.DB)
-	savva.DB = "muchachos list"
-	fmt.Println(savva.DB)
-	savva.Penitrator()
+	//fmt.Println(savva.DB)
+	//savva.DB = "muchachos list"
+	//fmt.Println(savva.DB)
+	//savva.Penitrator()
 }
