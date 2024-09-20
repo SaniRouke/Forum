@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"forum/cmd/utils"
-	"forum/internal"
+	"forum/internal/database"
 	"log"
 	"net/http"
 	"regexp"
@@ -23,7 +23,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allPosts, err := internal.GetAllPosts()
+	allPosts, err := app.Store.Post.GetAll()
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
 		log.Println(err)
@@ -43,7 +43,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Posts []internal.Post
+		Posts []database.Post
 		User  User
 	}{
 		Posts: allPosts,
@@ -63,7 +63,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	post, err := internal.GetPost(id)
+	post, err := app.Store.Post.GetPost(id)
 	if err != nil {
 		fmt.Println("add1")
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
@@ -76,7 +76,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	comments, err := internal.GetComments(id)
+	comments, err := app.Store.Post.GetComments(id)
 	if err != nil {
 		fmt.Println("add2")
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
@@ -99,7 +99,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 	}
 
 	data := struct {
-		Post internal.Post
+		Post database.Post
 		User User
 	}{
 		Post: post,
@@ -185,7 +185,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		}
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
-		err = internal.CreatePost(topic, body, user.Name)
+		err = app.Store.Post.CreatePost(topic, body, user.Name)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			log.Println(err)
@@ -202,7 +202,7 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	user, err := internal.GetUser(userCookie.Value)
+	user, err := app.Store.User.GetUser(userCookie.Value)
 	if err != nil || user.ID == 0 {
 		http.Error(w, "Unauthorized: Invalid user", http.StatusUnauthorized)
 		return
@@ -217,7 +217,7 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = internal.AddComment(id, user.Username, commentBody, date)
+	err = app.Store.Post.AddComment(id, user.Username, commentBody, date)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Unable to add comment")
 		log.Println(err)
@@ -246,12 +246,12 @@ func (app *Application) handlerSignup(w http.ResponseWriter, r *http.Request) {
 		dateOfCreation := time.Now().Format("2006-01-02 15:04:05")
 
 		if !asciiRegex.MatchString(username) || !asciiRegex.MatchString(password) {
-			utils.ErrorPage(w, http.StatusBadRequest, "Username and password can only contain ASCII characters between 33 and 125.")
+			utils.ErrorPage(w, http.StatusBadRequest, "Username and password can only contain ASCII characters between 33 and 125. If you're unfamiliar with the ASCII table, now is the time to check it out.")
 			log.Println("Invalid username or password format.")
 			return
 		}
 
-		err := internal.CreateUser(username, email, password, dateOfCreation)
+		err := app.Store.User.CreateUser(username, email, password, dateOfCreation)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "Unable to create user")
 			log.Println(err)
@@ -283,7 +283,7 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
 
-		isAuthenticated, err := internal.AuthenticateUser(username, password)
+		isAuthenticated, err := app.Store.User.AuthenticateUser(username, password)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 			log.Println(err)
@@ -295,7 +295,7 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user, err := internal.GetUser(username)
+		user, err := app.Store.User.GetUser(username)
 		if err != nil {
 			log.Println(err)
 			return

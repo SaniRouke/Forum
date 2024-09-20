@@ -2,13 +2,14 @@ package main
 
 import (
 	"forum/cmd/utils"
-	"forum/internal"
+	"forum/internal/database"
 	"log"
 	"net/http"
 )
 
 type Application struct {
-	User User
+	User  User
+	Store *database.DataStore
 }
 
 type User struct {
@@ -23,7 +24,11 @@ func main() {
 		log.Fatal("Failed to initialize templates:", err)
 	}
 
-	app := Application{}
+	db, err := database.InitializeDB("./database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	app := Application{Store: database.CreateDataStore(db)}
 
 	mux := http.NewServeMux()
 
@@ -40,11 +45,6 @@ func main() {
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
-
-	err = internal.InitializeDB("./database.db")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	log.Println("Listening on http://localhost:8080...")
 	serverErr := http.ListenAndServe(":8080", mux)

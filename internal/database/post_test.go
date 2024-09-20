@@ -1,6 +1,8 @@
-package internal
+package database
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCreatePost(t *testing.T) {
 	type args struct {
