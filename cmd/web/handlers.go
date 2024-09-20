@@ -106,7 +106,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		User: user,
 	}
 
-	fmt.Println(data.Post)
+	//fmt.Println(data.Post)
 
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {

@@ -3,6 +3,7 @@ body, h1, h2, h3, p, ul, li, a, input, textarea, button {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: Arial, sans-serif; /* Ensure consistent font */
 }
 
 body {
@@ -67,6 +68,16 @@ li a:hover {
 }
 
 /* Post page styles */
+.post-content {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    word-wrap: break-word; /* Ensure text doesn't overflow */
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
 h1 {
     margin-bottom: 20px;
     font-size: 2em;
@@ -94,16 +105,18 @@ input[type="text"], textarea {
     font-size: 1em;
     border: 1px solid #ccc;
     border-radius: 5px;
+    width: 100%;
+    max-width: 100%; /* Ensure input doesn't overflow */
 }
 
 textarea {
-    height: 200px;
+    height: 150px; /* Reduced height for smaller comment box */
     resize: vertical;
 }
 
 button, .action-button {
-    background-color: #add8e6; /* Very light blue */
-    color: #000; /* Change text color to black for better contrast */
+    background-color: #dba738; /* Golden beer color */
+    color: #fff;
     border: none;
     padding: 10px 15px;
     font-size: 1em;
@@ -113,13 +126,12 @@ button, .action-button {
 }
 
 button:hover, .action-button:hover {
-    background-color: #87ceeb; /* Slightly darker light blue on hover */
+    background-color: #c39234; /* Slightly darker golden color */
 }
-
 
 /* Form input styles */
 .input-field {
-    width: 100%; /* Ensures the fields take up the full width of the container */
+    width: 100%;
     margin-bottom: 20px;
     padding: 10px;
     font-size: 1em;
@@ -128,23 +140,29 @@ button:hover, .action-button:hover {
     box-sizing: border-box;
 }
 
-.delete-button, .edit-button {
-    background-color: rgba(128, 128, 128, 0.5); /* grey and translucent */
-    border: none;
-    color: white;
-    padding: 5px 10px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 12px; /* Reduce font size */
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: auto; /* Ensure the button width is auto */
+/* Comment box styles */
+.comment-box {
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
 }
 
-.delete-button:hover, .edit-button:hover {
-    background-color: rgba(128, 128, 128, 0.8); /* slightly less translucent on hover */
+.comment-author {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.comment-body {
+    font-size: 1em;
+    margin-bottom: 10px;
+}
+
+.comment-date {
+    font-size: 0.8em;
+    color: #6c757d;
+    text-align: right;
 }
 
 /* Error page styles */
@@ -160,14 +178,12 @@ button:hover, .action-button:hover {
 .error-code {
     font-size: 3em;
     font-weight: bold;
-    color: #FF0000; /* Red color for error code */
-    font-family: 'Arial Black', sans-serif; /* Fancy font for error code */
+    color: #FF0000;
 }
 
 .error-message {
-    font-size: 1.5fem;
+    font-size: 1.5em;
     color: #333;
-    font-family: 'Arial', sans-serif; /* Fancy font for error message */
     margin-bottom: 20px;
 }
 
@@ -176,7 +192,7 @@ button:hover, .action-button:hover {
 }
 
 .back-button {
-    background-color: #87ceeb;
+    background-color: #dba738;
     color: #fff;
     padding: 10px 20px;
     text-decoration: none;
@@ -186,67 +202,29 @@ button:hover, .action-button:hover {
 }
 
 .back-button:hover {
-    background-color: #87ceeb;
+    background-color: #c39234;
 }
 
 .post-buttons {
     display: flex;
     gap: 10px;
-    margin-top: 20px; /* Add some space above the buttons */
+    margin-top: 20px;
 }
 
-/* Ensure all action buttons have the same size and appearance */
 .action-button {
-    background-color: #87ceeb;
+    background-color: #dba738;
     color: white;
     border: none;
-    padding: 10px 20px;  /* Adjust padding for uniform size */
+    padding: 10px 20px;
     font-size: 1em;
     cursor: pointer;
     border-radius: 5px;
     text-align: center;
-    text-decoration: none; /* For the "Go back" link */
+    text-decoration: none;
     width: auto;
-    min-width: 100px; /* Ensures the buttons have the same minimum width */
+    min-width: 100px;
 }
 
 .action-button:hover {
-    background-color: #87ceeb;
+    background-color: #c39234;
 }
-
-/* Comment box styles */
-.comment-box {
-    background-color: #e9ecef;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-}
-
-.comment-author {
-    font-weight: bold;
-    font-family: 'Georgia', serif; /* Different font */
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-.comment-body {
-    font-size: 1em;
-    margin-bottom: 10px;
-}
-
-.comment-date {
-    font-size: 0.8em;
-    color: #6c757d; /* Gray color */
-    text-align: right;
-}
-
-/* Post content styles */
-.post-content {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
-
-
-

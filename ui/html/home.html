@@ -8,11 +8,11 @@
     <title>Forum - Home</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" type="image/webp" href="/static/images/doom_fav.webp">
- </head>
+</head>
 <body>
 {{ template "nav" . }}
 <main class="container">
-    <h1>Skuf.forum</h1>
+    <h1>Save Our Skufs!</h1>
     <ul>
         {{ range .Posts }}
         <li><a href="/post?id={{ .ID }}">{{ .Topic }}</a></li>
@@ -21,4 +21,3 @@
 </main>
 </body>
 </html>
-
