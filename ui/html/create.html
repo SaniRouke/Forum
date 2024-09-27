@@ -17,8 +17,19 @@
         <label for="body">Text:</label>
         <textarea id="body" name="body" required></textarea>
         <br>
+
+        <label>Categories:</label>
+        {{ range .Categories}}
+
+        <label for="{{.}}">{{.}}</label>
+        <input type="checkbox" name="categories" id="{{.}}" value="{{.}}" >
+
+        {{end}}
+
         <button type="submit" class="action-button">Publish</button>
     </form>
 </div>
 </body>
-</html>
+
+
+

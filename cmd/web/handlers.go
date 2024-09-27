@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -30,10 +31,17 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userNameCookie, err := r.Cookie("user_name")
+	allCategories, err := app.Store.Post.GetCategories()
 	if err != nil {
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
 		log.Println(err)
+		return
 	}
+
+	userNameCookie, err := r.Cookie("user_name")
+	//if err != nil {
+	//	log.Println(err)
+	//}
 
 	var user User
 
@@ -43,11 +51,13 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Posts []database.Post
-		User  User
+		Posts      []database.Post
+		Categories []string
+		User       User
 	}{
-		Posts: allPosts,
-		User:  user,
+		Posts:      allPosts,
+		Categories: allCategories,
+		User:       user,
 	}
 
 	err = utils.RenderTemplate(w, "home.html", data, http.StatusOK)
@@ -65,7 +75,6 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 
 	post, err := app.Store.Post.GetPost(id)
 	if err != nil {
-		fmt.Println("add1")
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
 		return
@@ -78,7 +87,6 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 
 	comments, err := app.Store.Post.GetComments(id)
 	if err != nil {
-		fmt.Println("add2")
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
 		return
@@ -98,6 +106,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		user.IsAuth = true
 	}
 
+	post.Category = strings.ReplaceAll(post.Category, ",", ", ")
 	data := struct {
 		Post database.Post
 		User User
@@ -105,8 +114,6 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		Post: post,
 		User: user,
 	}
-
-	//fmt.Println(data.Post)
 
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {
@@ -144,13 +151,18 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			user.Name = userNameCookie.Value
 			user.IsAuth = true
 		}
-
+		categoriesFromDB, err := app.Store.Post.GetCategories()
+		if err != nil {
+			log.Println(err)
+		}
 		data := struct {
 			//Post internal.Post
-			User User
+			User       User
+			Categories []string
 		}{
 			//Post: post,
-			User: user,
+			User:       user,
+			Categories: categoriesFromDB,
 		}
 
 		err = utils.RenderTemplate(w, "create.html", data, http.StatusOK)
@@ -185,7 +197,16 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		}
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
-		err = app.Store.Post.CreatePost(topic, body, user.Name)
+
+		category := strings.Join(r.PostForm["categories"], ",")
+
+		fmt.Println(category)
+
+		postForm := database.CreatePostForm{
+			topic, body, category, user.Name,
+		}
+
+		err = app.Store.Post.CreatePost(postForm)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			log.Println(err)

@@ -9,12 +9,14 @@ import (
 type postDBMethods struct {
 	DB *sql.DB
 }
+
 type PostDBInterface interface {
-	CreatePost(topic, body, author string) error
+	CreatePost(form CreatePostForm) error
 	GetPost(id string) (Post, error)
 	GetAll() ([]Post, error)
 	AddComment(postID int, author string, commentBody string, date string) error
 	GetComments(id string) ([]Comment, error)
+	GetCategories() ([]string, error)
 }
 
 type Post struct {
@@ -24,7 +26,8 @@ type Post struct {
 	Body     string
 	Date     string
 	Comments []Comment
-	// Likes
+	Category string
+	//likes / dislikes
 }
 
 type Comment struct {
@@ -33,22 +36,29 @@ type Comment struct {
 	Author string
 	Body   string
 	Date   string
-	// Likes
+	//likes / dislikes
+}
+
+type CreatePostForm struct {
+	Topic    string
+	Body     string
+	Category string
+	Author   string
 }
 
 func DataPostWorkerCreation(db *sql.DB) *postDBMethods {
 	return &postDBMethods{DB: db}
 }
 
-func (p *postDBMethods) CreatePost(topic, body, author string) error {
+func (p *postDBMethods) CreatePost(form CreatePostForm) error {
 	date := time.Now().Format("2006-01-02 15:04:05")
-	query := "INSERT INTO posts (topic, body, author, date) VALUES (?, ?, ?, ?);"
-	_, err := p.DB.Exec(query, topic, body, author, date)
+	query := "INSERT INTO posts (topic, body, category, author, date) VALUES (?, ?, ?, ?, ?);"
+	_, err := p.DB.Exec(query, form.Topic, form.Body, form.Category, form.Author, date)
 	return err
 }
 
 func (p *postDBMethods) GetAll() ([]Post, error) {
-	query := "SELECT id, topic, body FROM posts;"
+	query := "SELECT id, topic, body FROM posts ORDER BY date desc"
 	rows, err := p.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -68,8 +78,8 @@ func (p *postDBMethods) GetAll() ([]Post, error) {
 
 func (p *postDBMethods) GetPost(id string) (Post, error) {
 	var post Post
-	query := "SELECT id, topic, body, author, date FROM posts WHERE id = ?;"
-	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date)
+	query := "SELECT id, topic, body, category, date, author FROM posts WHERE id = ?;"
+	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Category, &post.Date, &post.Author)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}
@@ -100,4 +110,23 @@ func (p *postDBMethods) AddComment(postID int, author string, commentBody string
 	query := "INSERT INTO comments (post_id, author, body, date) VALUES (?, ?, ?, ?)"
 	_, err := p.DB.Exec(query, postID, author, commentBody, date)
 	return err
+}
+
+func (p *postDBMethods) GetCategories() ([]string, error) {
+
+	categoryList := []string{}
+
+	query := "SELECT category FROM categories"
+	rows, err := p.DB.Query(query)
+	for rows.Next() {
+		var oneCategory string
+		if err = rows.Scan(&oneCategory); err != nil {
+			return nil, err
+		}
+		categoryList = append(categoryList, oneCategory)
+	}
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+	return categoryList, nil
 }
