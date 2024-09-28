@@ -24,7 +24,19 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allPosts, err := app.Store.Post.GetAll()
+	// FILTER
+	selectedCategories := r.URL.Query()["categories"]
+	//selectedCategoriesString := "'" + strings.Join(selectedCategories, "','") + "'"
+
+	var allPosts []database.Post
+	var err error
+
+	if len(selectedCategories) > 0 {
+		allPosts, err = app.Store.Post.GetPostsByCategory(selectedCategories)
+	} else {
+		allPosts, err = app.Store.Post.GetAll()
+	}
+
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
 		log.Println(err)
@@ -44,7 +56,6 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	//}
 
 	var user User
-
 	if userNameCookie != nil {
 		user.Name = userNameCookie.Value
 		user.IsAuth = true

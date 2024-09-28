@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"strings"
 	"time"
 )
 
@@ -17,6 +19,7 @@ type PostDBInterface interface {
 	AddComment(postID int, author string, commentBody string, date string) error
 	GetComments(id string) ([]Comment, error)
 	GetCategories() ([]string, error)
+	GetPostsByCategory([]string) ([]Post, error)
 }
 
 type Post struct {
@@ -74,6 +77,50 @@ func (p *postDBMethods) GetAll() ([]Post, error) {
 		posts = append(posts, post)
 	}
 	return posts, nil
+}
+
+func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) {
+
+	if len(categories) == 0 {
+		return nil, fmt.Errorf("Amount of categories should be greather than 0")
+	}
+
+	// Anime,Beer
+	// sqlite> SELECT count(*) FROM posts WHERE category in (Beer, Altushki);
+	// select count(*) from posts where category like "Beer" OR category like "Altushki";
+
+	conditions := []string{}
+	args := []any{}
+
+	for _, category := range categories {
+		conditions = append(conditions, "category LIKE ?")
+		args = append(args, "%"+category+"%")
+	}
+
+	query := `
+		SELECT id, topic FROM posts 
+		WHERE ` + strings.Join(conditions, " OR ") + `
+		ORDER BY date DESC;
+	`
+
+	fmt.Println(query)
+
+	rows, err := p.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		if err = rows.Scan(&post.ID, &post.Topic); err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+
 }
 
 func (p *postDBMethods) GetPost(id string) (Post, error) {
