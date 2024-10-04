@@ -13,16 +13,18 @@
 {{ template "nav" . }}
 <main class="container">
     <h1>Save Our Skufs!</h1>
-<form action="" method="" >
-    <div class="category-list">
+<form class="catogory_filter" action="" method="" >
+    <ul class="category-list">
     {{ range .Categories }}
-        <span class="category-item">
-            <label for="category-{{.}}">{{.}}</label>
-            <input type="checkbox" name="categories" id="category-{{.}}" value="{{.}}">
-        </span>
+        <li class="category-item">
+            <input class="input" type="checkbox" name="categories" id="category-{{.}}" value="{{.}}">
+            <label class="label" for="category-{{.}}">{{.}}</label>
+        </li>
     {{ end }}
-    </div>
-    <input type="submit" value="Filter">
+        <li>
+            <input class="label submit" type="submit" value="Filter">
+        </li>
+    </ul>
 </form>
     <ul>
         {{ range .Posts }}

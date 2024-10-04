@@ -18,13 +18,14 @@
         <textarea id="body" name="body" required></textarea>
         <br>
 
-        <label>Categories:</label>
-        {{ range .Categories}}
-
-        <label for="{{.}}">{{.}}</label>
-        <input type="checkbox" name="categories" id="{{.}}" value="{{.}}" >
-
-        {{end}}
+        <ul class="category-list">
+            {{ range .Categories }}
+            <li class="category-item">
+                <input class="input" type="checkbox" name="categories" id="category-{{.}}" value="{{.}}">
+                <label class="label" for="category-{{.}}">{{.}}</label>
+            </li>
+            {{ end }}
+        </ul>
         <button type="submit" class="action-button">Publish</button>
     </form>
 </div>

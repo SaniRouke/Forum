@@ -20,6 +20,7 @@ type PostDBInterface interface {
 	GetComments(id string) ([]Comment, error)
 	GetCategories() ([]string, error)
 	GetPostsByCategory([]string) ([]Post, error)
+	SetReaction(postID int, userID string, reaction string) error
 }
 
 type Post struct {
@@ -176,4 +177,14 @@ func (p *postDBMethods) GetCategories() ([]string, error) {
 		return nil, err
 	}
 	return categoryList, nil
+}
+
+func (p *postDBMethods) SetReaction(postID int, userID string, reaction string) error {
+	query := "INSERT INTO likes (post_id, user_id, reaction) VALUES (?, ?, ?)"
+	_, err := p.DB.Exec(query, postID, userID, reaction)
+	if err != nil {
+		return err
+
+	}
+	return nil
 }

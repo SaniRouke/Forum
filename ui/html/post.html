@@ -17,6 +17,13 @@
     <p><strong>Category:</strong> {{ .Post.Category }}</p>
     <p><strong>Date:</strong> {{ .Post.Date }}</p>
 
+    <form method="POST">
+        <input name="reaction" value="like" type="submit"/>
+        <input name="reaction" value="dislike" type="submit"/>
+        <input type="hidden" name="post_id" value="{{ .Post.ID }}" />
+        <input type="hidden" name="user_id" value="{{ .Post.ID }}" />
+    </form>
+
     <h2>Comments</h2>
     {{ if .Post.Comments }}
     {{ range .Post.Comments }}

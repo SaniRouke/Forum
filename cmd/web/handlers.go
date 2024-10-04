@@ -126,6 +126,9 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		User: user,
 	}
 
+	reaction := r.FormValue("reaction")
+	fmt.Println(reaction)
+
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {
 		log.Println(err)
@@ -357,4 +360,24 @@ func (app *Application) handlerLogout(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, cookie)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (app *Application) handlerReact(w http.ResponseWriter, r *http.Request) {
+	userCookie, err := r.Cookie("user_name")
+	if err != nil || userCookie.Value == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	postID := r.FormValue("post_id")
+	reaction := r.FormValue("reaction")
+	var reactionToDB bool
+
+	if reaction == "like" {
+		reactionToDB = true
+	} else {
+		reactionToDB = false
+	}
+
+	app.Store.Post.SetReaction()
+
 }
