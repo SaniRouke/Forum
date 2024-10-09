@@ -252,7 +252,7 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.Store.Post.AddComment(id, user.Username, commentBody, date)
+	err = app.Store.Post.AddComment(id, user.ID, commentBody, date)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Unable to add comment")
 		log.Println(err)
@@ -368,10 +368,15 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	fmt.Println("ЛУКИЧ")
 
-	mockUserID := 23 // Get an id of an authorized user
+	user, err := app.Store.User.GetUser(userCookie.Value)
+	if err != nil {
+		log.Println("Invalid user ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
+	userID := user.ID
 	postID := r.FormValue("post_id")
 	reaction := r.FormValue("reaction")
 	var reactionToDB int
@@ -386,7 +391,7 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 		log.Println(err)
 	}
 
-	currentReaction, err := app.Store.Post.CheckReaction(intPostID, mockUserID)
+	currentReaction, err := app.Store.Post.CheckReaction(intPostID, userID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -394,24 +399,23 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 
 	switch {
 	case currentReaction == 0:
-		err = app.Store.Post.SetReaction(intPostID, mockUserID, reactionToDB)
-		if err != nil {
-			log.Println(err)
-		}
+		err = app.Store.Post.SetReaction(intPostID, userID, reactionToDB)
 	case currentReaction == reactionToDB:
-		app.Store.Post.DeleteReaction(intPostID, mockUserID)
+		app.Store.Post.DeleteReaction(intPostID, userID)
+	default:
+		err = app.Store.Post.UpdateReaction(intPostID, userID, reactionToDB)
 
-	case currentReaction == -1 && reactionToDB == 1:
-		app.Store.Post.UpdateReaction(intPostID, mockUserID, 1)
-
-	case currentReaction == 1 && reactionToDB == -1:
-		app.Store.Post.UpdateReaction(intPostID, mockUserID, -1)
+		//case currentReaction == -1 && reactionToDB == 1:
+		//	app.Store.Post.UpdateReaction(intPostID, userID, 1)
+		//
+		//case currentReaction == 1 && reactionToDB == -1:
+		//	app.Store.Post.UpdateReaction(intPostID, userID, -1)
 	}
 
-	//err = app.Store.Post.SetReaction(intPostID, mockUserID, reactionToDB)
-	//if err != nil {
-	//	log.Println(err)
-	//}
+	if err != nil {
+		log.Println("Error updating reaction:", err)
+	}
+
 	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)
 
 }

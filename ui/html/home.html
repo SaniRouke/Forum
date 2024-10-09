@@ -28,7 +28,13 @@
 </form>
     <ul>
         {{ range .Posts }}
-        <li><a href="/post?id={{ .ID }}">{{ .Topic }}</a></li>
+        <li>
+            <div class="post-header">
+                <a href="/post?id={{ .ID }}">{{ .Topic }}</a>
+                <span class="post-likes">Likes: {{ .Likes }} | Dislikes: {{ .Dislikes }}</span>
+            </div>
+            <div class="post-info">Author: {{ .Author }} | Date: {{ .Date }}</div>
+        </li>
         {{ end }}
     </ul>
 </main>

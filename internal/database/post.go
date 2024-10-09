@@ -16,7 +16,7 @@ type PostDBInterface interface {
 	CreatePost(form CreatePostForm) error
 	GetPost(id string) (Post, error)
 	GetAll() ([]Post, error)
-	AddComment(postID int, author string, commentBody string, date string) error
+	AddComment(postID int, userID int, commentBody string, date string) error
 	GetComments(id string) ([]Comment, error)
 	GetCategories() ([]string, error)
 	GetPostsByCategory([]string) ([]Post, error)
@@ -34,7 +34,8 @@ type Post struct {
 	Date     string
 	Comments []Comment
 	Category string
-	//likes / dislikes
+	Likes    int
+	Dislikes int
 }
 
 type Comment struct {
@@ -69,7 +70,16 @@ func (p *postDBMethods) CreatePost(form CreatePostForm) error {
 }
 
 func (p *postDBMethods) GetAll() ([]Post, error) {
-	query := "SELECT id, topic, body FROM posts ORDER BY date desc"
+	query := `
+    SELECT p.id, p.topic, p.date, u.username,
+           COALESCE(SUM(CASE WHEN rp.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
+           COALESCE(SUM(CASE WHEN rp.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
+    FROM posts p
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN reactions_posts rp ON rp.post_id = p.id
+    GROUP BY p.id
+    ORDER BY p.date DESC;
+`
 	rows, err := p.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -79,7 +89,7 @@ func (p *postDBMethods) GetAll() ([]Post, error) {
 	var posts []Post
 	for rows.Next() {
 		var post Post
-		if err = rows.Scan(&post.ID, &post.Topic, &post.Body); err != nil {
+		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Likes, &post.Dislikes); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)
@@ -92,10 +102,6 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 	if len(categories) == 0 {
 		return nil, fmt.Errorf("Amount of categories should be greather than 0")
 	}
-
-	// Anime,Beer
-	// sqlite> SELECT count(*) FROM posts WHERE category in (Beer, Altushki);
-	// select count(*) from posts where category like "Beer" OR category like "Altushki";
 
 	conditions := []string{}
 	args := []any{}
@@ -110,8 +116,6 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 		WHERE ` + strings.Join(conditions, " OR ") + `
 		ORDER BY date DESC;
 	`
-
-	fmt.Println(query)
 
 	rows, err := p.DB.Query(query, args...)
 	if err != nil {
@@ -134,8 +138,16 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 func (p *postDBMethods) GetPost(id string) (Post, error) {
 	var post Post
 
-	query := "SELECT p.id, p.topic, p.body, u.username, p.date, p.category FROM posts AS p JOIN users AS u ON u.id = p.user_id WHERE p.id = ?;"
-	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date, &post.Category)
+	query := `SELECT p.id, p.topic, p.body, u.username, p.date, p.category,
+       COALESCE(SUM(CASE WHEN r.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
+       COALESCE(SUM(CASE WHEN r.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
+       FROM posts AS p 
+       JOIN users AS u ON u.id = p.user_id 
+       LEFT JOIN reactions_posts AS r ON r.post_id = p.id
+       WHERE p.id = ?
+	   GROUP BY p.id;`
+
+	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date, &post.Category, &post.Likes, &post.Dislikes)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}
@@ -162,9 +174,9 @@ func (p *postDBMethods) GetComments(id string) ([]Comment, error) {
 	return comments, nil
 }
 
-func (p *postDBMethods) AddComment(postID int, author string, commentBody string, date string) error {
-	query := "INSERT INTO comments (post_id, author, body, date) VALUES (?, ?, ?, ?)"
-	_, err := p.DB.Exec(query, postID, author, commentBody, date)
+func (p *postDBMethods) AddComment(postID int, userID int, commentBody string, date string) error {
+	query := "INSERT INTO comments (post_id, user_id, body, date) VALUES (?, ?, ?, ?)"
+	_, err := p.DB.Exec(query, postID, userID, commentBody, date)
 	return err
 }
 

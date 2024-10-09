@@ -17,12 +17,20 @@
     <p><strong>Category:</strong> {{ .Post.Category }}</p>
     <p><strong>Date:</strong> {{ .Post.Date }}</p>
 
-    <form method="POST" action="/react">
-        <input name="reaction" value="like" type="submit"/>
-        <input name="reaction" value="dislike" type="submit"/>
-        <input type="hidden" name="post_id" value="{{ .Post.ID }}" />
-        <input type="hidden" name="user_id" value="{{ .Post.ID }}" />
-    </form>
+    <div class="post-reactions">
+        <form method="POST" action="/react" class="reaction-form">
+            <div class="reaction-group">
+                <button type="submit" name="reaction" value="like" class="reaction-button like-button">👍</button>
+                <span class="reaction-count">{{ .Post.Likes }}</span>
+            </div>
+            <div class="reaction-group">
+                <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button">👎</button>
+                <span class="reaction-count">{{ .Post.Dislikes }}</span>
+            </div>
+        </form>
+    </div>
+
+
 
     <h2>Comments</h2>
     {{ if .Post.Comments }}

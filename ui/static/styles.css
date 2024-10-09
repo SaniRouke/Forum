@@ -51,10 +51,11 @@ h1 {
 
 ul {
     list-style: none;
+    padding: 0;
 }
 
 li {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 li a {
@@ -273,4 +274,88 @@ button:hover, .action-button:hover {
 .submit:hover {
     background-color: rgb(195, 146, 52);
 }
-/* *** */
+
+
+.post-header {
+    display: flex;
+    align-items: center;
+}
+
+.post-header a {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-right: 10px;
+    text-decoration: none;
+    color: #000;
+}
+
+.post-likes {
+    font-size: 0.9em;
+    color: #888;
+    margin-left: auto;
+}
+
+.post-info {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Style for the entire reaction section */
+/* Reaction section styling */
+.post-reactions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Styling for the reaction form */
+.reaction-form {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Grouping button and count together */
+.reaction-group {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Adjusts space between button and count */
+}
+
+/* Button styles */
+.reaction-button {
+    padding: 5px 8px;
+    font-size: 1.2em;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.like-button {
+    background-color: #4CAF50;
+}
+
+.like-button:hover {
+    background-color: #45a049;
+}
+
+.dislike-button {
+    background-color: #f44336;
+}
+
+.dislike-button:hover {
+    background-color: #e53935;
+}
+
+/* Count styling */
+.reaction-count {
+    font-weight: bold;
+    color: #4f4f4f;
+    font-size: 1em;
+}
+
