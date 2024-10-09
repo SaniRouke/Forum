@@ -362,22 +362,56 @@ func (app *Application) handlerLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func (app *Application) handlerReact(w http.ResponseWriter, r *http.Request) {
+func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Request) {
 	userCookie, err := r.Cookie("user_name")
 	if err != nil || userCookie.Value == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+	fmt.Println("ЛУКИЧ")
+
+	mockUserID := 23 // Get an id of an authorized user
+
 	postID := r.FormValue("post_id")
 	reaction := r.FormValue("reaction")
-	var reactionToDB bool
+	var reactionToDB int
 
 	if reaction == "like" {
-		reactionToDB = true
+		reactionToDB = 1
 	} else {
-		reactionToDB = false
+		reactionToDB = -1
+	}
+	intPostID, err := strconv.Atoi(postID)
+	if err != nil {
+		log.Println(err)
 	}
 
-	app.Store.Post.SetReaction()
+	currentReaction, err := app.Store.Post.CheckReaction(intPostID, mockUserID)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(currentReaction)
+
+	switch {
+	case currentReaction == 0:
+		err = app.Store.Post.SetReaction(intPostID, mockUserID, reactionToDB)
+		if err != nil {
+			log.Println(err)
+		}
+	case currentReaction == reactionToDB:
+		app.Store.Post.DeleteReaction(intPostID, mockUserID)
+
+	case currentReaction == -1 && reactionToDB == 1:
+		app.Store.Post.UpdateReaction(intPostID, mockUserID, 1)
+
+	case currentReaction == 1 && reactionToDB == -1:
+		app.Store.Post.UpdateReaction(intPostID, mockUserID, -1)
+	}
+
+	//err = app.Store.Post.SetReaction(intPostID, mockUserID, reactionToDB)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)
 
 }
