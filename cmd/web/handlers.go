@@ -26,7 +26,6 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	// FILTER
 	selectedCategories := r.URL.Query()["categories"]
-	//selectedCategoriesString := "'" + strings.Join(selectedCategories, "','") + "'"
 
 	var allPosts []database.Post
 	var err error
@@ -126,8 +125,8 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		User: user,
 	}
 
-	reaction := r.FormValue("reaction")
-	fmt.Println(reaction)
+	//reaction := r.FormValue("reaction")
+	//fmt.Println(reaction)
 
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {
@@ -203,24 +202,22 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 		}
 
-		var user User
-
-		if userNameCookie != nil {
-			user.Name = userNameCookie.Value
-			user.IsAuth = true
+		user, err := app.Store.User.GetUser(userNameCookie.Value)
+		if err != nil {
+			log.Println(err)
 		}
+
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
 
 		category := strings.Join(r.PostForm["categories"], ",")
 
-		fmt.Println(category)
-
 		postForm := database.CreatePostForm{
-			topic, body, category, user.Name,
+			topic, body, category, user.ID,
 		}
 
 		err = app.Store.Post.CreatePost(postForm)
+		fmt.Println(postForm)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			log.Println(err)
@@ -399,17 +396,64 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 
 	switch {
 	case currentReaction == 0:
-		err = app.Store.Post.SetReaction(intPostID, userID, reactionToDB)
+		err = app.Store.Post.SetPostReaction(intPostID, userID, reactionToDB)
 	case currentReaction == reactionToDB:
 		app.Store.Post.DeleteReaction(intPostID, userID)
 	default:
 		err = app.Store.Post.UpdateReaction(intPostID, userID, reactionToDB)
+	}
 
-		//case currentReaction == -1 && reactionToDB == 1:
-		//	app.Store.Post.UpdateReaction(intPostID, userID, 1)
-		//
-		//case currentReaction == 1 && reactionToDB == -1:
-		//	app.Store.Post.UpdateReaction(intPostID, userID, -1)
+	if err != nil {
+		log.Println("Error updating reaction:", err)
+	}
+
+	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)
+
+}
+
+func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Request) {
+	userCookie, err := r.Cookie("user_name")
+	if err != nil || userCookie.Value == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	user, err := app.Store.User.GetUser(userCookie.Value)
+	if err != nil {
+		log.Println("Invalid user ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	userID := user.ID
+	postID := r.FormValue("post_id")
+	commentID := r.FormValue("comment_id")
+	reaction := r.FormValue("reaction")
+	var reactionToDB int
+
+	if reaction == "like" {
+		reactionToDB = 1
+	} else {
+		reactionToDB = -1
+	}
+	intCommentID, err := strconv.Atoi(commentID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	currentReaction, err := app.Store.Post.CheckCommentReaction(intCommentID, userID)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(currentReaction)
+
+	switch {
+	case currentReaction == 0:
+		err = app.Store.Post.SetCommentReaction(intCommentID, userID, reactionToDB)
+	case currentReaction == reactionToDB:
+		app.Store.Post.DeleteCommentReaction(intCommentID, userID)
+	default:
+		err = app.Store.Post.UpdateCommentReaction(intCommentID, userID, reactionToDB)
 	}
 
 	if err != nil {

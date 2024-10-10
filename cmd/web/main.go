@@ -13,6 +13,7 @@ type Application struct {
 }
 
 type User struct {
+	ID     int
 	Name   string
 	IsAuth bool
 }
@@ -36,6 +37,7 @@ func main() {
 	mux.HandleFunc("GET /post", app.handlerPostView)
 	mux.HandleFunc("POST /react", app.handlerReactToPost)
 	mux.HandleFunc("POST /comment", app.handlerComment)
+	mux.HandleFunc("POST /comment-react", app.handlerReactToComment)
 	mux.HandleFunc("GET /create", app.handlerCreatePost)
 	mux.HandleFunc("POST /create", app.handlerCreatePost)
 	mux.HandleFunc("GET /signup", app.handlerSignup)

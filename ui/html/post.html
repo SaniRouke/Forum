@@ -19,6 +19,10 @@
 
     <div class="post-reactions">
         <form method="POST" action="/react" class="reaction-form">
+            <!-- Hidden inputs for post_id and user_id outside the button groups -->
+            <input type="hidden" name="post_id" value="{{ .Post.ID }}" />
+            <input type="hidden" name="user_id" value="{{ .User.ID }}" />
+
             <div class="reaction-group">
                 <button type="submit" name="reaction" value="like" class="reaction-button like-button">👍</button>
                 <span class="reaction-count">{{ .Post.Likes }}</span>
@@ -30,17 +34,37 @@
         </form>
     </div>
 
-
-
     <h2>Comments</h2>
     {{ if .Post.Comments }}
+    {{ $user := .User}}
+    {{ $post := .Post}}
     {{ range .Post.Comments }}
     <div class="comment-box">
         <div class="comment-author">{{ .Author }}</div>
         <div class="comment-body">{{ .Body }}</div>
         <div class="comment-date">{{ .Date }}</div>
+
+        <div class="post-reactions">
+            <form method="POST" action="/comment-react" class="reaction-form">
+                <!-- Hidden inputs for post_id and user_id outside the button groups -->
+                <input type="hidden" name="post_id" value="{{ $post.ID }}" />
+                <input type="hidden" name="comment_id" value="{{ .ID }}" />
+                <input type="hidden" name="user_id" value="{{ $user.ID }}" />
+
+                <div class="reaction-group">
+                    <button type="submit" name="reaction" value="like" class="reaction-button like-button">👍</button>
+                    <span class="reaction-count">{{ .Likes }}</span>
+                </div>
+                <div class="reaction-group">
+                    <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button">👎</button>
+                    <span class="reaction-count">{{ .Dislikes }}</span>
+                </div>
+            </form>
+        </div>
     </div>
+
     {{ end }}
+
     {{ else }}
     <p>No comments yet. Be the first to comment!</p>
     {{ end }}

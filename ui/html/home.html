@@ -33,7 +33,7 @@
                 <a href="/post?id={{ .ID }}">{{ .Topic }}</a>
                 <span class="post-likes">Likes: {{ .Likes }} | Dislikes: {{ .Dislikes }}</span>
             </div>
-            <div class="post-info">Author: {{ .Author }} | Date: {{ .Date }}</div>
+            <div class="post-info">Author: {{ .Author }} | Date: {{ .Date }} | Category: {{ .Category }} </div>
         </li>
         {{ end }}
     </ul>
