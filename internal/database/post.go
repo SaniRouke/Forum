@@ -14,16 +14,16 @@ type postDBMethods struct {
 
 type PostDBInterface interface {
 	CreatePost(form CreatePostForm) error
-	GetPost(id string) (Post, error)
+	GetPost(id string, userID int) (Post, error)
 	GetAll() ([]Post, error)
 	AddComment(postID int, userID int, commentBody string, date string) error
-	GetComments(id string) ([]Comment, error)
+	GetComments(id string, userID int) ([]Comment, error)
 	GetCategories() ([]string, error)
 	GetPostsByCategory([]string) ([]Post, error)
 	SetPostReaction(postID int, userID int, reaction int) error
-	CheckReaction(postID int, userID int) (int, error)
-	UpdateReaction(postID int, userID int, reaction int) error
-	DeleteReaction(postID int, userID int) error
+	CheckPostReaction(postID int, userID int) (int, error)
+	UpdatePostReaction(postID int, userID int, reaction int) error
+	DeletePostReaction(postID int, userID int) error
 	SetCommentReaction(commentID int, userID int, reaction int) error
 	CheckCommentReaction(commentID int, userID int) (int, error)
 	UpdateCommentReaction(commentID int, userID int, reaction int) error
@@ -31,25 +31,29 @@ type PostDBInterface interface {
 }
 
 type Post struct {
-	ID       int
-	Author   string
-	Topic    string
-	Body     string
-	Date     string
-	Comments []Comment
-	Category string
-	Likes    int
-	Dislikes int
+	ID           int
+	Author       string
+	Topic        string
+	Body         string
+	Date         string
+	Comments     []Comment
+	Category     string
+	Likes        int
+	Dislikes     int
+	UserLiked    bool
+	UserDisliked bool
 }
 
 type Comment struct {
-	ID       int
-	PostID   int
-	Author   string
-	Body     string
-	Date     string
-	Likes    int
-	Dislikes int
+	ID           int
+	PostID       int
+	Author       string
+	Body         string
+	Date         string
+	Likes        int
+	Dislikes     int
+	UserLiked    bool
+	UserDisliked bool
 }
 
 type CreatePostForm struct {
@@ -146,7 +150,8 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 
 }
 
-func (p *postDBMethods) GetPost(id string) (Post, error) {
+func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
+
 	var post Post
 
 	query := `SELECT p.id, p.topic, p.body, u.username, p.date, p.category,
@@ -162,10 +167,20 @@ func (p *postDBMethods) GetPost(id string) (Post, error) {
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}
+
+	if userID != 0 {
+		userLiked, userDisliked, err := p.GetUserPostReaction(post.ID, userID)
+		if err != nil {
+			return Post{}, err
+		}
+		post.UserLiked = userLiked
+		post.UserDisliked = userDisliked
+	}
+
 	return post, err
 }
 
-func (p *postDBMethods) GetComments(id string) ([]Comment, error) {
+func (p *postDBMethods) GetComments(id string, userID int) ([]Comment, error) {
 	query := `
     SELECT c.id, c.post_id, c.body, u.username, c.date,
     COALESCE(SUM(CASE WHEN r.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
@@ -187,9 +202,17 @@ func (p *postDBMethods) GetComments(id string) ([]Comment, error) {
 	for rows.Next() {
 		var comment Comment
 		if err = rows.Scan(&comment.ID, &comment.PostID, &comment.Body, &comment.Author, &comment.Date, &comment.Likes, &comment.Dislikes); err != nil {
-			fmt.Println("DONE")
 			return nil, err
 		}
+		if userID != 0 {
+			userLiked, userDisliked, err := p.GetUserCommentReaction(comment.ID, userID)
+			if err != nil {
+				return nil, err
+			}
+			comment.UserLiked = userLiked
+			comment.UserDisliked = userDisliked
+		}
+
 		comments = append(comments, comment)
 	}
 
@@ -221,6 +244,26 @@ func (p *postDBMethods) GetCategories() ([]string, error) {
 	return categoryList, nil
 }
 
+func (p *postDBMethods) GetUserPostReaction(postID int, userID int) (bool, bool, error) {
+	var reaction int
+	query := "SELECT reaction FROM reactions_posts WHERE post_id = ? AND user_id = ?"
+	err := p.DB.QueryRow(query, postID, userID).Scan(&reaction)
+
+	if err == sql.ErrNoRows {
+		return false, false, nil
+	} else if err != nil {
+		return false, false, err
+	}
+
+	var userLiked bool
+	if reaction == 1 {
+		userLiked = true
+	}
+	userDisliked := reaction == -1
+
+	return userLiked, userDisliked, nil
+}
+
 func (p *postDBMethods) SetPostReaction(postID int, userID int, reaction int) error {
 	query := "INSERT INTO reactions_posts (post_id, user_id, reaction) VALUES (?, ?, ?)"
 	_, err := p.DB.Exec(query, postID, userID, reaction)
@@ -230,7 +273,7 @@ func (p *postDBMethods) SetPostReaction(postID int, userID int, reaction int) er
 	return nil
 }
 
-func (p *postDBMethods) CheckReaction(postID int, userID int) (int, error) {
+func (p *postDBMethods) CheckPostReaction(postID int, userID int) (int, error) {
 	var reaction int
 	query := "SELECT reaction FROM reactions_posts WHERE post_id = ? AND user_id = ?"
 	err := p.DB.QueryRow(query, postID, userID).Scan(&reaction)
@@ -240,7 +283,7 @@ func (p *postDBMethods) CheckReaction(postID int, userID int) (int, error) {
 	return reaction, nil
 }
 
-func (p *postDBMethods) UpdateReaction(postID int, userID int, reaction int) error {
+func (p *postDBMethods) UpdatePostReaction(postID int, userID int, reaction int) error {
 	query := "UPDATE reactions_posts SET reaction = ? WHERE post_id = ? AND user_id = ?"
 	_, err := p.DB.Exec(query, reaction, postID, userID)
 	if err != nil {
@@ -250,7 +293,7 @@ func (p *postDBMethods) UpdateReaction(postID int, userID int, reaction int) err
 	return nil
 }
 
-func (p *postDBMethods) DeleteReaction(postID int, userID int) error {
+func (p *postDBMethods) DeletePostReaction(postID int, userID int) error {
 	query := "DELETE FROM reactions_posts WHERE post_id = ? AND user_id = ?"
 	_, err := p.DB.Exec(query, postID, userID)
 	if err != nil {
@@ -258,6 +301,23 @@ func (p *postDBMethods) DeleteReaction(postID int, userID int) error {
 	}
 
 	return nil
+}
+
+func (p *postDBMethods) GetUserCommentReaction(commentID int, userID int) (bool, bool, error) {
+	var reaction int
+	query := "SELECT reaction FROM reactions_comments WHERE comment_id = ? AND user_id = ?"
+	err := p.DB.QueryRow(query, commentID, userID).Scan(&reaction)
+
+	if err == sql.ErrNoRows {
+		return false, false, nil
+	} else if err != nil {
+		return false, false, err
+	}
+
+	userLiked := reaction == 1
+	userDisliked := reaction == -1
+
+	return userLiked, userDisliked, nil
 }
 
 func (p *postDBMethods) SetCommentReaction(commentID int, userID int, reaction int) error {
@@ -281,7 +341,7 @@ func (p *postDBMethods) CheckCommentReaction(commentID int, userID int) (int, er
 
 func (p *postDBMethods) UpdateCommentReaction(commentID int, userID int, reaction int) error {
 	query := "UPDATE reactions_comments SET reaction = ? WHERE comment_id = ? AND user_id = ?"
-	_, err := p.DB.Exec(query, reaction, commentID, userID)
+	_, err := p.DB.Exec(query, reaction, commentID, userID)reaction
 	if err != nil {
 		return err
 	}
@@ -289,9 +349,9 @@ func (p *postDBMethods) UpdateCommentReaction(commentID int, userID int, reactio
 	return nil
 }
 
-func (p *postDBMethods) DeleteCommentReaction(postID int, userID int) error {
-	query := "DELETE FROM reactions_posts WHERE post_id = ? AND user_id = ?"
-	_, err := p.DB.Exec(query, postID, userID)
+func (p *postDBMethods) DeleteCommentReaction(commentID int, userID int) error {
+	query := "DELETE FROM reactions_comments WHERE comment_id = ? AND user_id = ?"
+	_, err := p.DB.Exec(query, commentID, userID)
 	if err != nil {
 		return err
 	}

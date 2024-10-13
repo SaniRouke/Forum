@@ -326,27 +326,20 @@ button:hover, .action-button:hover {
 /* Button styles */
 .reaction-button {
     padding: 5px 8px;
-    font-size: 1.2em;
+    font-size: 1em;
     color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    display: inline-flex;
-    align-items: center;
+    background-color: #e0e0e0; /* светло-серый цвет по умолчанию */
 }
 
-.like-button {
-    background-color: #4CAF50;
-}
 
 .like-button:hover {
     background-color: #45a049;
 }
 
-.dislike-button {
-    background-color: #f44336;
-}
 
 .dislike-button:hover {
     background-color: #e53935;
@@ -357,5 +350,13 @@ button:hover, .action-button:hover {
     font-weight: bold;
     color: #4f4f4f;
     font-size: 1em;
+}
+
+.like-button.active {
+    background-color: #4CAF50;
+}
+
+.dislike-button.active {
+    background-color: #f44336;
 }
 

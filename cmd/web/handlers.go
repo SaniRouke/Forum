@@ -83,7 +83,21 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	post, err := app.Store.Post.GetPost(id)
+	userCookie, err := r.Cookie("user_name")
+	if err != nil || userCookie.Value == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		log.Println(err)
+		return
+	}
+
+	user, err := app.Store.User.GetUser(userCookie.Value)
+	if err != nil || user.ID == 0 {
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+		log.Println(err)
+		return
+	}
+
+	post, err := app.Store.Post.GetPost(id, user.ID)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
@@ -95,7 +109,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	comments, err := app.Store.Post.GetComments(id)
+	comments, err := app.Store.Post.GetComments(id, user.ID)
 	if err != nil {
 		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
@@ -104,29 +118,18 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 
 	post.Comments = comments
 
-	userNameCookie, err := r.Cookie("user_name")
-	if err != nil {
-		log.Println(err)
-	}
-
-	var user User
-
-	if userNameCookie != nil {
-		user.Name = userNameCookie.Value
-		user.IsAuth = true
-	}
-
 	post.Category = strings.ReplaceAll(post.Category, ",", ", ")
 	data := struct {
 		Post database.Post
 		User User
 	}{
 		Post: post,
-		User: user,
+		User: User{
+			ID:     user.ID,
+			Name:   user.Username,
+			IsAuth: true,
+		},
 	}
-
-	//reaction := r.FormValue("reaction")
-	//fmt.Println(reaction)
 
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {
@@ -388,7 +391,7 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 		log.Println(err)
 	}
 
-	currentReaction, err := app.Store.Post.CheckReaction(intPostID, userID)
+	currentReaction, err := app.Store.Post.CheckPostReaction(intPostID, userID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -398,9 +401,9 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	case currentReaction == 0:
 		err = app.Store.Post.SetPostReaction(intPostID, userID, reactionToDB)
 	case currentReaction == reactionToDB:
-		app.Store.Post.DeleteReaction(intPostID, userID)
+		app.Store.Post.DeletePostReaction(intPostID, userID)
 	default:
-		err = app.Store.Post.UpdateReaction(intPostID, userID, reactionToDB)
+		err = app.Store.Post.UpdatePostReaction(intPostID, userID, reactionToDB)
 	}
 
 	if err != nil {
@@ -451,7 +454,7 @@ func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Req
 	case currentReaction == 0:
 		err = app.Store.Post.SetCommentReaction(intCommentID, userID, reactionToDB)
 	case currentReaction == reactionToDB:
-		app.Store.Post.DeleteCommentReaction(intCommentID, userID)
+		err = app.Store.Post.DeleteCommentReaction(intCommentID, userID)
 	default:
 		err = app.Store.Post.UpdateCommentReaction(intCommentID, userID, reactionToDB)
 	}
