@@ -4,13 +4,12 @@
     <a href="/">Home</a>
     <a href="/create">Create Post</a>
     {{if .User.IsAuth}}
-    <a>{{.User.Name}}</a>
+    <a href="/user">{{.User.Name}}</a>
     <form action="/logout" method="post" style="display: inline;">
         <button type="submit" class="nav-logout-button">Log Out</button>
     </form>
     {{else}}
-    <a href="/signup">Sign Up</a>
-    <a href="/login">Login</a>
+    <a href="/login">Log In</a>
     {{end}}
 </nav>
 {{end}}

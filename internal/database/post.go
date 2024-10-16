@@ -20,6 +20,10 @@ type PostDBInterface interface {
 	GetComments(id string, userID int) ([]Comment, error)
 	GetCategories() ([]string, error)
 	GetPostsByCategory([]string) ([]Post, error)
+	GetHotTopics() ([]Post, error)
+	GetPostsByUser(userID int) ([]Post, error)
+	GetPostsWithUserComments(userID int) ([]Post, error)
+	GetPostsWithUserReactions(userID int) ([]Post, error)
 	SetPostReaction(postID int, userID int, reaction int) error
 	CheckPostReaction(postID int, userID int) (int, error)
 	UpdatePostReaction(postID int, userID int, reaction int) error
@@ -96,10 +100,16 @@ func (p *postDBMethods) GetAll() ([]Post, error) {
 	defer rows.Close()
 
 	var posts []Post
+
 	for rows.Next() {
 		var post Post
+
 		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Likes, &post.Dislikes); err != nil {
 			return nil, err
+		}
+		postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
+		if err == nil {
+			post.Date = postDate.Format("02.01.2006, 15:04")
 		}
 		posts = append(posts, post)
 	}
@@ -144,6 +154,10 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Likes, &post.Dislikes); err != nil {
 			return nil, err
 		}
+		postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
+		if err == nil {
+			post.Date = postDate.Format("02.01.2006, 15:04")
+		}
 		posts = append(posts, post)
 	}
 	return posts, nil
@@ -166,6 +180,10 @@ func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
 	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date, &post.Category, &post.Likes, &post.Dislikes)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
+	}
+	postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
+	if err == nil {
+		post.Date = postDate.Format("02.01.2006, 15:04")
 	}
 
 	if userID != 0 {
@@ -203,6 +221,10 @@ func (p *postDBMethods) GetComments(id string, userID int) ([]Comment, error) {
 		var comment Comment
 		if err = rows.Scan(&comment.ID, &comment.PostID, &comment.Body, &comment.Author, &comment.Date, &comment.Likes, &comment.Dislikes); err != nil {
 			return nil, err
+		}
+		commentDate, err := time.Parse("2006-01-02 15:04:05", comment.Date)
+		if err == nil {
+			comment.Date = commentDate.Format("02.01.2006, 15:04")
 		}
 		if userID != 0 {
 			userLiked, userDisliked, err := p.GetUserCommentReaction(comment.ID, userID)
@@ -341,7 +363,7 @@ func (p *postDBMethods) CheckCommentReaction(commentID int, userID int) (int, er
 
 func (p *postDBMethods) UpdateCommentReaction(commentID int, userID int, reaction int) error {
 	query := "UPDATE reactions_comments SET reaction = ? WHERE comment_id = ? AND user_id = ?"
-	_, err := p.DB.Exec(query, reaction, commentID, userID)reaction
+	_, err := p.DB.Exec(query, reaction, commentID, userID)
 	if err != nil {
 		return err
 	}
@@ -357,4 +379,113 @@ func (p *postDBMethods) DeleteCommentReaction(commentID int, userID int) error {
 	}
 
 	return nil
+}
+
+func (p *postDBMethods) GetHotTopics() ([]Post, error) {
+	query := `
+	SELECT p.id, p.topic, p.date, u.username, p.category
+	FROM posts p
+	JOIN users u ON u.id = p.user_id
+	LEFT JOIN comments c ON c.post_id = p.id
+	GROUP BY p.id
+	ORDER BY MAX(c.date) DESC
+	LIMIT 5;
+	`
+	rows, err := p.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var hotPosts []Post
+	for rows.Next() {
+		var post Post
+		err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category)
+		if err != nil {
+			return nil, err
+		}
+		hotPosts = append(hotPosts, post)
+	}
+	return hotPosts, nil
+}
+
+func (p *postDBMethods) GetPostsByUser(userID int) ([]Post, error) {
+	query := `
+	SELECT p.id, p.topic, p.date, u.username, p.category
+	FROM posts p 
+	JOIN users u ON u.id = p.user_id
+	WHERE p.user_id = ?
+	ORDER BY p.date DESC`
+	rows, err := p.DB.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var userPosts []Post
+	for rows.Next() {
+		var post Post
+		err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category)
+		if err != nil {
+			return nil, err
+		}
+		userPosts = append(userPosts, post)
+	}
+	return userPosts, nil
+
+}
+
+func (p *postDBMethods) GetPostsWithUserComments(userID int) ([]Post, error) {
+	query := `
+	SELECT DISTINCT p.id, p.topic, p.date, u.username, p.category
+	FROM posts p 
+	JOIN users u ON u.id = p.user_id
+	JOIN comments c ON c.post_id = p.id
+	WHERE c.user_id = ?
+	ORDER BY p.date DESC`
+
+	rows, err := p.DB.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var commentedPosts []Post
+
+	for rows.Next() {
+		var post Post
+		err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category)
+		if err != nil {
+			return nil, err
+		}
+		commentedPosts = append(commentedPosts, post)
+	}
+	return commentedPosts, nil
+}
+
+func (p *postDBMethods) GetPostsWithUserReactions(userID int) ([]Post, error) {
+	query := `
+	SELECT DISTINCT p.id, p.topic, p.date, u.username, p.category
+    FROM posts p
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN reactions_posts rp ON rp.post_id = p.id
+    LEFT JOIN reactions_comments rc ON rc.comment_id IN (SELECT id FROM comments WHERE post_id = p.id)
+    WHERE rp.user_id = ? OR rc.user_id = ?
+    ORDER BY p.date DESC;
+    `
+
+	rows, err := p.DB.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var likedPosts []Post
+	for rows.Next() {
+		var post Post
+		err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category)
+		if err != nil {
+			return nil, err
+		}
+		likedPosts = append(likedPosts, post)
+	}
+	return likedPosts, nil
 }

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Profile</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+{{ template "nav" . }}
+<main class="container">
+  <h1>Welcome, {{ .User.Name }}</h1>
+
+  <div class="user-actions">
+    <form method="GET" action="/user">
+      <button type="submit" name="action" value="myposts">My Posts</button>
+      <button type="submit" name="action" value="mycomments">Posts with My Comments</button>
+      <button type="submit" name="action" value="myreactions">My Likes</button>
+    </form>
+  </div>
+
+  {{ if .Posts }}
+  <h2>{{ .SectionTitle }}</h2>
+  <ul>
+    {{ range .Posts }}
+    <li>
+      <a href="/post?id={{ .ID }}">{{ .Topic }}</a>
+      <div>Author: {{ .Author }} | Date: {{ .Date }} | Category: {{ .Category }}</div>
+    </li>
+    {{ end }}
+  </ul>
+  {{ else if .SectionTitle }}
+  <p>No posts found in this section.</p>
+  {{ end }}
+</main>
+</body>
+</html>

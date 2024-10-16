@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"unicode"
 )
 
 type User struct {
@@ -18,7 +19,7 @@ var templates *template.Template
 
 func CachingTemplates() error {
 	var err error
-	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html")
+	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html", "user.html")
 	if err != nil {
 		return err
 	}
@@ -78,4 +79,34 @@ func Neuter(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func IsValidInput(input string) bool {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return false
+	}
+	for _, r := range input {
+		if unicode.IsLetter(r) {
+			return true
+		}
+	}
+	return false
+}
+
+func IsValidPassword(password string) bool {
+	if len(password) < 8 {
+		return false
+	}
+	hasLetter := false
+	hasDigit := false
+
+	for _, c := range password {
+		if unicode.IsLetter(c) {
+			hasLetter = true
+		} else if unicode.IsDigit(c) {
+			hasDigit = true
+		}
+	}
+	return hasLetter && hasDigit
 }

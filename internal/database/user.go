@@ -43,20 +43,21 @@ func (p *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 
 	// Check if username or email already exists
 	var count int
-	var existingEmail sql.NullString
-
+	//var existingEmail sql.NullString
+	//
 	// Adjust query to handle cases where the email might be empty
-	query := "SELECT COUNT(*), email FROM users WHERE LOWER(username) = LOWER(?) OR email = ?"
-	err := p.DB.QueryRow(query, username, email).Scan(&count, &existingEmail)
+	//query := "SELECT COUNT(*), email FROM users WHERE LOWER(username) = LOWER(?) OR email = ?"
+	query := "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)"
+	err := p.DB.QueryRow(query, username, email).Scan(&count)
 	if err != nil {
 		return fmt.Errorf("failed to check existing user: %v", err)
 	}
 
 	// Debug output to understand what's being retrieved
 	log.Printf("User count: %d", count)
-	log.Printf("Existing email: %v", existingEmail.String)
+	//log.Printf("Existing email: %v", existingEmail.String)
 
-	if count > 0 && (existingEmail.Valid && existingEmail.String == email) {
+	if count > 0 {
 		return errors.New("username or email already exists")
 	}
 
