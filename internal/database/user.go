@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"strings"
@@ -26,13 +27,41 @@ type UserDBInterface interface {
 	CreateUser(username, email, password, dateOfCreation string) error
 	AuthenticateUser(identifier, password string) (bool, error)
 	GetUser(username string) (User, error)
+	CreateSessionInDB(userID int) (string, error)
+	CheckToken(token string) (bool, error)
 }
 
 func DataUserWorkerCreation(db *sql.DB) *userDBMethods {
 	return &userDBMethods{DB: db}
 }
 
-func (p *userDBMethods) CreateUser(username, email, password, dateOfCreation string) error {
+func (u *userDBMethods) CreateSessionInDB(userID int) (string, error) {
+
+	token, err := uuid.NewV4()
+	if err != nil {
+		return "", err
+	}
+	query := "INSERT INTO sessions (token, user_id, expiry) VALUES (?, ?, ?);"
+
+	_, err = u.DB.Exec(query, token, userID, time.Now().Add(24*time.Hour))
+	if err != nil {
+		return "", err
+	}
+	return token.String(), nil
+}
+
+func (u *userDBMethods) CheckToken(token string) (bool, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM sessions WHERE token = ?"
+	err := u.DB.QueryRow(query, token).Scan(&count)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation string) error {
 	// Normalize email and username by trimming spaces and converting to lowercase
 	email = strings.TrimSpace(strings.ToLower(email))
 	username = strings.TrimSpace(username)
@@ -48,7 +77,7 @@ func (p *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 	// Adjust query to handle cases where the email might be empty
 	//query := "SELECT COUNT(*), email FROM users WHERE LOWER(username) = LOWER(?) OR email = ?"
 	query := "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)"
-	err := p.DB.QueryRow(query, username, email).Scan(&count)
+	err := u.DB.QueryRow(query, username, email).Scan(&count)
 	if err != nil {
 		return fmt.Errorf("failed to check existing user: %v", err)
 	}
@@ -69,7 +98,7 @@ func (p *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 
 	// Insert the user into the database
 	query = "INSERT INTO users (username, email, password_hash, date_of_creation) VALUES (?, ?, ?, ?)"
-	_, err = p.DB.Exec(query, username, email, hashedPassword, dateOfCreation)
+	_, err = u.DB.Exec(query, username, email, hashedPassword, dateOfCreation)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
 	}
@@ -77,13 +106,13 @@ func (p *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 	return nil
 }
 
-func (p *userDBMethods) AuthenticateUser(identifier, password string) (bool, error) {
+func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, error) {
 	var storedHash string
 
 	log.Println("Attempting to authenticate:", identifier)
 
 	query := "SELECT password_hash FROM users WHERE username = ? OR email = ?"
-	err := p.DB.QueryRow(query, identifier, identifier).Scan(&storedHash)
+	err := u.DB.QueryRow(query, identifier, identifier).Scan(&storedHash)
 	if err == sql.ErrNoRows {
 		log.Println("User not found:", identifier)
 		return false, nil
@@ -104,10 +133,10 @@ func (p *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 	return true, nil
 }
 
-func (p *userDBMethods) GetUser(username string) (User, error) {
+func (u *userDBMethods) GetUser(username string) (User, error) {
 	var user User
 	query := "SELECT id, username, email, password_hash FROM users WHERE username = ?;"
-	err := p.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+	err := u.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 	if err == sql.ErrNoRows {
 		return User{}, nil
 	}

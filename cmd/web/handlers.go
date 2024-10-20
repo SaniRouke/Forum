@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
@@ -25,25 +24,36 @@ import (
 
 func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userCookie, err := r.Cookie("user_name")
-		if err != nil || userCookie.Value == "" {
+		tokenCookie, err := r.Cookie("auth_token")
+		if err != nil || tokenCookie.Value == "" {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		user, err := app.Store.User.GetUser(userCookie.Value)
-		if err != nil || user.ID == 0 {
-			// If user is not found, redirect to login
+		//user, err := app.Store.User.GetUser(userlCookie.Value)
+		//if err != nil || user.ID == 0 {
+		//	// If user is not found, redirect to login
+		//	http.Redirect(w, r, "/login", http.StatusSeeOther)
+		//	return
+		//}
+		// Attach the user data to the context
+
+		exist, err := app.Store.User.CheckToken(tokenCookie.Value)
+		if !exist {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		// Attach the user data to the context
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user", user)
-		r = r.WithContext(ctx)
+
+		//ctx := r.Context()
+		//ctx = context.WithValue(ctx, "user", user)
+		//r = r.WithContext(ctx)
 
 		// Call the next handler with the updated request
 		next(w, r)
+
+		//TODO: Check how to use map and session manager
+		// from should I get data about user
+		// use another MW or save data to a map in this MW
 	}
 }
 
@@ -417,13 +427,21 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 		user, err := app.Store.User.GetUser(username)
 		if err != nil {
+			utils.ErrorPage(w, http.StatusUnauthorized, "User not found")
+			log.Println(err)
+			return
+		}
+
+		token, err := app.Store.User.CreateSessionInDB(user.ID)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusUnauthorized, "You shall not pass!")
 			log.Println(err)
 			return
 		}
 
 		cookie := &http.Cookie{
-			Name:     "user_name",
-			Value:    user.Username,
+			Name:     "auth_token",
+			Value:    token,
 			Path:     "/",
 			HttpOnly: true,
 			MaxAge:   60 * 60 * 24,
