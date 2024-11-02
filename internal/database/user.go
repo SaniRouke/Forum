@@ -29,6 +29,7 @@ type UserDBInterface interface {
 	GetUser(username string) (User, error)
 	CreateSessionInDB(userID int) (string, error)
 	CheckToken(token string) (bool, error)
+	GetUserBySession(token string) (User, error)
 }
 
 func DataUserWorkerCreation(db *sql.DB) *userDBMethods {
@@ -59,6 +60,17 @@ func (u *userDBMethods) CheckToken(token string) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func (u *userDBMethods) GetUserBySession(token string) (User, error) {
+	var user User
+	query := "SELECT u.id, u.username, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token=?;"
+	err := u.DB.QueryRow(query, token).Scan(&user.ID, &user.Username, &user.Email)
+	if err != nil {
+		fmt.Println(err)
+		return user, err
+	}
+	return user, nil
 }
 
 func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation string) error {

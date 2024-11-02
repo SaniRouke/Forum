@@ -38,6 +38,8 @@ func main() {
 
 	mux.HandleFunc("GET /user", app.handlerUserPage)
 
+	//mux.HandleFunc("GET /", app.handlerShowUserPost)
+
 	mux.HandleFunc("POST /react", app.handlerReactToPost)
 	mux.HandleFunc("POST /comment", app.handlerComment)
 	mux.HandleFunc("POST /comment-react", app.handlerReactToComment)

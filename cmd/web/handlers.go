@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
@@ -22,6 +23,12 @@ import (
 //	func
 //}
 
+/*
+TODO: 2 pages: likes, my post
+TODO: Добавить отображение пользователя
+TODO: User page
+*/
+
 func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenCookie, err := r.Cookie("auth_token")
@@ -30,23 +37,22 @@ func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		//user, err := app.Store.User.GetUser(userlCookie.Value)
-		//if err != nil || user.ID == 0 {
-		//	// If user is not found, redirect to login
+		// Attach the user data to the context
+		//exist, err := app.Store.User.CheckToken(tokenCookie.Value)
+		//if !exist {
 		//	http.Redirect(w, r, "/login", http.StatusSeeOther)
 		//	return
 		//}
-		// Attach the user data to the context
-
-		exist, err := app.Store.User.CheckToken(tokenCookie.Value)
-		if !exist {
+		user, err := app.Store.User.GetUserBySession(tokenCookie.Value)
+		if err != nil {
+			log.Println(err)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		//ctx := r.Context()
-		//ctx = context.WithValue(ctx, "user", user)
-		//r = r.WithContext(ctx)
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "user", user)
+		r = r.WithContext(ctx)
 
 		// Call the next handler with the updated request
 		next(w, r)
@@ -94,12 +100,9 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userNameCookie, err := r.Cookie("user_name")
-
-	var user User
-	if userNameCookie != nil {
-		user.Name = userNameCookie.Value
-		user.IsAuth = true
+	userForTemplate, err := GetUserFromContext(r)
+	if err != nil {
+		log.Println(err)
 	}
 
 	for i := range allPosts {
@@ -113,7 +116,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}{
 		Posts:      allPosts,
 		Categories: allCategories,
-		User:       user,
+		User:       userForTemplate,
 	}
 
 	err = utils.RenderTemplate(w, "home.html", data, http.StatusOK)
@@ -121,6 +124,10 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 }
+
+//func (app *Application) handlerShowUserPost(w http.ResponseWriter, r *http.Request) {
+//	app.Store.Post.GetPostsByUser()
+//}
 
 func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
@@ -260,14 +267,11 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request) {
-	var userForTemplate User
-	user, ok := r.Context().Value("user").(database.User)
-	if !ok {
-		log.Println("Юзер-хуюзер не найден")
-	} else {
-		userForTemplate.Name = user.Username
-		userForTemplate.IsAuth = true
+	userForTemplate, err := GetUserFromContext(r)
+	if err != nil {
+		log.Println(err)
 	}
+
 	switch {
 	case r.Method == http.MethodGet:
 
@@ -305,7 +309,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		//}
 		category := strings.Join(r.PostForm["categories"], ",")
 		postForm := database.CreatePostForm{
-			topic, body, category, user.ID,
+			topic, body, category, userForTemplate.ID,
 		}
 
 		err := app.Store.Post.CreatePost(postForm)
