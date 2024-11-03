@@ -30,6 +30,7 @@ type UserDBInterface interface {
 	CreateSessionInDB(userID int) (string, error)
 	CheckToken(token string) (bool, error)
 	GetUserBySession(token string) (User, error)
+	DeleteUserSession(token string) error
 }
 
 func DataUserWorkerCreation(db *sql.DB) *userDBMethods {
@@ -153,4 +154,13 @@ func (u *userDBMethods) GetUser(username string) (User, error) {
 		return User{}, nil
 	}
 	return user, err
+}
+
+func (u *userDBMethods) DeleteUserSession(token string) error {
+	query := "DElETE FROM sessions WHERE token = ?"
+	_, err := u.DB.Exec(query, token)
+	if err != nil {
+		return err
+	}
+	return nil
 }

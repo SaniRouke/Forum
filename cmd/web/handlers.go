@@ -88,14 +88,14 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
 		return
 	}
 
 	allCategories, err := app.Store.Post.GetCategories()
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal server error")
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
 		log.Println(err)
 		return
 	}
@@ -399,14 +399,18 @@ func (app *Application) handlerSignup(w http.ResponseWriter, r *http.Request) {
 func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
+		user, err := app.GetUserSession(r)
+		if err != nil {
+			log.Println(err)
+		}
 
 		data := struct {
 			User User
 		}{
-			User: app.User,
+			User: user,
 		}
 
-		err := utils.RenderTemplate(w, "login.html", data, http.StatusOK)
+		err = utils.RenderTemplate(w, "login.html", data, http.StatusOK)
 		if err != nil {
 			log.Println(err)
 			return
@@ -453,19 +457,36 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 		http.SetCookie(w, cookie)
 
+		app.SaveUserSession(token)
+
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
 func (app *Application) handlerLogout(w http.ResponseWriter, r *http.Request) {
+
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+
 	cookie := &http.Cookie{
-		Name:   "user_name",
+		Name:   "auth_token",
 		Value:  "",
 		Path:   "/",
 		MaxAge: -1,
 	}
-
 	http.SetCookie(w, cookie)
+
+	err = app.Store.User.DeleteUserSession(user.Token)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	delete(app.UserSessionCache, user.Token)
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

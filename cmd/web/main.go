@@ -8,14 +8,15 @@ import (
 )
 
 type Application struct {
-	User  User
-	Store *database.DataStore
+	UserSessionCache map[string]User
+	Store            *database.DataStore
 }
 
 type User struct {
 	ID     int
 	Name   string
 	IsAuth bool
+	Token  string
 }
 
 func main() {
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	app := Application{Store: database.CreateDataStore(db)}
+	app := Application{Store: database.CreateDataStore(db), UserSessionCache: make(map[string]User)}
 
 	mux := http.NewServeMux()
 
