@@ -472,7 +472,7 @@ func (p *postDBMethods) GetPostsWithUserReactions(userID int) ([]Post, error) {
     ORDER BY p.date DESC;
     `
 
-	rows, err := p.DB.Query(query, userID)
+	rows, err := p.DB.Query(query, userID, userID)
 	if err != nil {
 		return nil, err
 	}

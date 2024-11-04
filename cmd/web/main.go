@@ -37,7 +37,7 @@ func main() {
 	mux.HandleFunc("/", app.handlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
 	mux.HandleFunc("GET /post", app.handlerPostView)
 
-	mux.HandleFunc("GET /user", app.handlerUserPage)
+	mux.HandleFunc("GET /user", app.authMW(app.handlerUserPage))
 
 	//mux.HandleFunc("GET /", app.handlerShowUserPost)
 

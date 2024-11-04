@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
@@ -31,35 +30,24 @@ TODO: User page
 
 func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenCookie, err := r.Cookie("auth_token")
-		if err != nil || tokenCookie.Value == "" {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		// Attach the user data to the context
-		//exist, err := app.Store.User.CheckToken(tokenCookie.Value)
-		//if !exist {
-		//	http.Redirect(w, r, "/login", http.StatusSeeOther)
-		//	return
-		//}
-		user, err := app.Store.User.GetUserBySession(tokenCookie.Value)
+		user, err := app.GetUserSession(r)
 		if err != nil {
-			log.Println(err)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user", user)
-		r = r.WithContext(ctx)
+		exist, err := app.Store.User.CheckToken(user.Token)
+		if !exist {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		//ctx := r.Context()
+		//ctx = context.WithValue(ctx, "user", user)
+		//r = r.WithContext(ctx)
 
 		// Call the next handler with the updated request
 		next(w, r)
-
-		//TODO: Check how to use map and session manager
-		// from should I get data about user
-		// use another MW or save data to a map in this MW
 	}
 }
 
@@ -100,7 +88,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userForTemplate, err := GetUserFromContext(r)
+	user, err := app.GetUserSession(r)
 	if err != nil {
 		log.Println(err)
 	}
@@ -116,7 +104,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}{
 		Posts:      allPosts,
 		Categories: allCategories,
-		User:       userForTemplate,
+		User:       user,
 	}
 
 	err = utils.RenderTemplate(w, "home.html", data, http.StatusOK)
@@ -136,18 +124,9 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userCookie, err := r.Cookie("user_name")
-	if err != nil || userCookie.Value == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	user, err := app.GetUserSession(r)
+	if err != nil {
 		log.Println(err)
-		return
-	}
-
-	user, err := app.Store.User.GetUser(userCookie.Value)
-	if err != nil || user.ID == 0 {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Println(err)
-		return
 	}
 
 	post, err := app.Store.Post.GetPost(id, user.ID)
@@ -177,11 +156,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		User User
 	}{
 		Post: post,
-		User: User{
-			ID:     user.ID,
-			Name:   user.Username,
-			IsAuth: true,
-		},
+		User: user,
 	}
 
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
@@ -191,22 +166,15 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) {
-	userCookie, err := r.Cookie("user_name")
-	if err != nil || userCookie.Value == "" {
+	user, err := app.GetUserSession(r)
+	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	// Retrieve user info from the database
-	user, err := app.Store.User.GetUser(userCookie.Value)
-	if err != nil || user.ID == 0 {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Failed to retrieve user information.")
 		return
 	}
 
 	// Add IsAuth field to the user struct for template use
 	userData := struct {
-		database.User
+		User
 		IsAuth bool
 	}{
 		User:   user,
@@ -240,6 +208,7 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	case "reactions":
 		posts, err = app.Store.Post.GetPostsWithUserReactions(user.ID)
 		if err != nil {
+			fmt.Println(err)
 			utils.ErrorPage(w, http.StatusInternalServerError, "Failed to retrieve posts with your reactions.")
 			return
 		}
@@ -267,7 +236,8 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request) {
-	userForTemplate, err := GetUserFromContext(r)
+
+	user, err := app.GetUserSession(r)
 	if err != nil {
 		log.Println(err)
 	}
@@ -285,7 +255,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			Categories []string
 		}{
 			//Post: post,
-			User:       userForTemplate,
+			User:       user,
 			Categories: categoriesFromDB,
 		}
 
@@ -309,7 +279,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		//}
 		category := strings.Join(r.PostForm["categories"], ",")
 		postForm := database.CreatePostForm{
-			topic, body, category, userForTemplate.ID,
+			topic, body, category, user.ID,
 		}
 
 		err := app.Store.Post.CreatePost(postForm)
@@ -325,16 +295,12 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 
-	userCookie, err := r.Cookie("user_name")
-	if err != nil || userCookie.Value == "" {
+	user, err := app.GetUserSession(r)
+	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	user, err := app.Store.User.GetUser(userCookie.Value)
-	if err != nil || user.ID == 0 {
-		http.Error(w, "Unauthorized: Invalid user", http.StatusUnauthorized)
-		return
-	}
+
 	postID := r.FormValue("post_id")
 	commentBody := r.FormValue("comment_body") // TODO: make constant
 	date := time.Now().Format("2006-01-02 15:04:05")
@@ -351,7 +317,6 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	fmt.Println(id, user.Username, commentBody, date)
 	http.Redirect(w, r, "/post?id="+postID, http.StatusSeeOther)
 
 }
@@ -440,6 +405,13 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		err = app.Store.User.DeletePreviousUserSession(user.ID)
+		if err != nil {
+			utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
+			log.Println(err)
+			return
+		}
+
 		token, err := app.Store.User.CreateSessionInDB(user.ID)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusUnauthorized, "You shall not pass!")
@@ -491,15 +463,8 @@ func (app *Application) handlerLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Request) {
-	userCookie, err := r.Cookie("user_name")
-	if err != nil || userCookie.Value == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	user, err := app.Store.User.GetUser(userCookie.Value)
+	user, err := app.GetUserSession(r)
 	if err != nil {
-		log.Println("Invalid user ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -523,7 +488,6 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(currentReaction)
 
 	switch {
 	case currentReaction == 0:
@@ -543,15 +507,8 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Request) {
-	userCookie, err := r.Cookie("user_name")
-	if err != nil || userCookie.Value == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	user, err := app.Store.User.GetUser(userCookie.Value)
+	user, err := app.GetUserSession(r)
 	if err != nil {
-		log.Println("Invalid user ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -576,7 +533,6 @@ func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(currentReaction)
 
 	switch {
 	case currentReaction == 0:

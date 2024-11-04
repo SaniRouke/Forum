@@ -19,7 +19,7 @@
   </div>
 
   {{ if .Posts }}
-  <h2>{{ .SectionTitle }}</h2>
+  <h2>{{ .PageTitle }}</h2>
   <ul>
     {{ range .Posts }}
     <li>
@@ -28,7 +28,7 @@
     </li>
     {{ end }}
   </ul>
-  {{ else if .SectionTitle }}
+  {{ else if .PageTitle }}
   <p>No posts found in this section.</p>
   {{ end }}
 </main>

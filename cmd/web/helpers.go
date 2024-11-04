@@ -28,7 +28,6 @@ func (app *Application) SaveUserSession(token string) error {
 }
 
 func (app *Application) GetUserSession(r *http.Request) (User, error) {
-	fmt.Println(app.UserSessionCache)
 	tokenCookie, err := r.Cookie("auth_token")
 	if err != nil || tokenCookie.Value == "" {
 		return User{}, err
