@@ -117,9 +117,17 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 //	app.Store.Post.GetPostsByUser()
 //}
 
+// TODO: добавить atoi проверку id - валидация
 func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) {
+
 	id := r.URL.Query().Get("id")
+
 	if id == "" {
+		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID") //TODO: make constnts
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil || idInt < 1 {
 		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
 		return
 	}
@@ -289,6 +297,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 			return
 		}
+		w.WriteHeader(http.StatusCreated)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }

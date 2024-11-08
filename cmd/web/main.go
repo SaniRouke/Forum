@@ -19,7 +19,7 @@ type User struct {
 	Token  string
 }
 
-func main() {
+func main() { //TODO: добавить логер
 
 	err := utils.CachingTemplates()
 	if err != nil {
@@ -31,31 +31,8 @@ func main() {
 		log.Fatal(err)
 	}
 	app := Application{Store: database.CreateDataStore(db), UserSessionCache: make(map[string]User)}
-
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", app.handlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
-	mux.HandleFunc("GET /post", app.handlerPostView)
-
-	mux.HandleFunc("GET /user", app.authMW(app.handlerUserPage))
-
-	//mux.HandleFunc("GET /", app.handlerShowUserPost)
-
-	mux.HandleFunc("POST /react", app.handlerReactToPost)
-	mux.HandleFunc("POST /comment", app.handlerComment)
-	mux.HandleFunc("POST /comment-react", app.handlerReactToComment)
-	mux.HandleFunc("GET /create", app.authMW(app.handlerCreatePost))
-	mux.HandleFunc("POST /create", app.authMW(app.handlerCreatePost))
-	mux.HandleFunc("GET /signup", app.handlerSignup)
-	mux.HandleFunc("POST /signup", app.handlerSignup)
-	mux.HandleFunc("GET /login", app.handlerLogin)
-	mux.HandleFunc("POST /login", app.handlerLogin)
-	mux.HandleFunc("POST /logout", app.handlerLogout)
-
-	fileServer := http.FileServer(http.Dir("./ui/static"))
-	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
-
+	
 	log.Println("Listening on http://localhost:8080...")
-	serverErr := http.ListenAndServe(":8080", mux)
+	serverErr := http.ListenAndServe(":8080", app.routes())
 	log.Fatal(serverErr)
 }
