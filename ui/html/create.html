@@ -10,7 +10,7 @@
 {{ template "nav" . }}
 <div class="container">
     <h1>Create a new post about your skuffy life</h1>
-    <form method="post" action="/create">
+    <form method="post" action="/create" onsubmit="return validateForm()">
         <label for="topic">Topic:</label>
         <input type="text" id="topic" name="topic" required>
         <br>
@@ -32,7 +32,20 @@
         <button type="submit" class="action-button">Publish</button>
     </form>
 </div>
-</body>
+<script>
+    // Function to validate form submission
+    function validateForm() {
+        const checkboxes = document.querySelectorAll('input[name="categories"]');
+        const isCategorySelected = [...checkboxes].some(checkbox => checkbox.checked);
 
+        if (!isCategorySelected) {
+            alert("Please choose at least one category before publishing your post.");
+            return false; // Prevent form submission
+        }
+        return true; // Allow form submission
+    }
+</script>
+</body>
+</html>
 
 

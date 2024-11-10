@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
@@ -16,6 +17,8 @@ TODO: 2 pages: likes, my post
 TODO: Добавить отображение пользователя
 TODO: User page
 */
+
+var ErrorUserExist = errors.New("user already exist")
 
 func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request) {
 
@@ -71,7 +74,6 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }

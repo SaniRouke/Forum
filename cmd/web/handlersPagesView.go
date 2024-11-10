@@ -35,21 +35,19 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Println(err)
+		app.ServerErr(w, err)
 		return
 	}
 
 	allCategories, err := app.Store.Post.GetCategories()
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Println(err)
+		app.ServerErr(w, err)
 		return
 	}
 
 	user, err := app.GetUserSession(r)
 	if err != nil {
-		log.Println(err)
+		app.Log.Info.Println(err)
 	}
 
 	for i := range allPosts {
@@ -68,7 +66,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.RenderTemplate(w, "home.html", data, http.StatusOK)
 	if err != nil {
-		log.Println(err)
+		app.ServerErr(w, err)
 	}
 }
 

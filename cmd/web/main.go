@@ -5,11 +5,17 @@ import (
 	"forum/internal/database"
 	"log"
 	"net/http"
+	"os"
 )
 
 type Application struct {
+	Log              Logger
 	UserSessionCache map[string]User
 	Store            *database.DataStore
+}
+
+type Logger struct {
+	Info, Warn, Error *log.Logger
 }
 
 type User struct {
@@ -30,8 +36,17 @@ func main() { //TODO: добавить логер
 	if err != nil {
 		log.Fatal(err)
 	}
-	app := Application{Store: database.CreateDataStore(db), UserSessionCache: make(map[string]User)}
-	
+
+	logInfo := log.New(os.Stdout, "SkufInfo: ", log.Ldate|log.Ltime|log.Llongfile)
+	logWarn := log.New(os.Stdout, "SkufWarning: ", log.Ldate|log.Ltime|log.Llongfile)
+	logError := log.New(os.Stderr, "SkufError: ", log.Ldate|log.Ltime|log.Llongfile)
+
+	app := Application{
+		Log:              Logger{logInfo, logWarn, logError},
+		Store:            database.CreateDataStore(db),
+		UserSessionCache: make(map[string]User),
+	}
+
 	log.Println("Listening on http://localhost:8080...")
 	serverErr := http.ListenAndServe(":8080", app.routes())
 	log.Fatal(serverErr)
