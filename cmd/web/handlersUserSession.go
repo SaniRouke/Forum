@@ -12,7 +12,7 @@ func (app *Application) handlerSignup(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		err := utils.RenderTemplate(w, "signup.html", nil, http.StatusOK)
 		if err != nil {
-			log.Println(err)
+			app.Log.Error(err.Error())
 		}
 		return
 	}
@@ -40,7 +40,7 @@ func (app *Application) handlerSignup(w http.ResponseWriter, r *http.Request) {
 		err := app.Store.User.CreateUser(username, email, password, dateOfCreation)
 		if err != nil {
 			utils.ErrorPage(w, http.StatusInternalServerError, "My fellow skuf, you are trying to use an existing email or username")
-			app.Log.Error.Println(err)
+			app.Log.Error(err.Error())
 			return
 		}
 

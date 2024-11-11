@@ -78,5 +78,5 @@ func GetUserFromContext(r *http.Request) (User, error) {
 
 func (app *Application) ServerErr(w http.ResponseWriter, err error) {
 	utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-	app.Log.Error.Println(err)
+	app.Log.Error(err.Error())
 }

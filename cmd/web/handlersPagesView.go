@@ -14,6 +14,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
 		utils.ErrorPage(w, http.StatusNotFound, "Page not found")
+		app.Log.Info("Page not found by (polzovatel dolboeb)")
 		return
 	}
 
@@ -47,7 +48,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.GetUserSession(r)
 	if err != nil {
-		app.Log.Info.Println(err)
+		app.Log.Info("Get User Session")
 	}
 
 	for i := range allPosts {

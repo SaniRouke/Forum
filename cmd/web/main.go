@@ -4,18 +4,15 @@ import (
 	"forum/cmd/utils"
 	"forum/internal/database"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 )
 
 type Application struct {
-	Log              Logger
+	Log              *slog.Logger
 	UserSessionCache map[string]User
 	Store            *database.DataStore
-}
-
-type Logger struct {
-	Info, Warn, Error *log.Logger
 }
 
 type User struct {
@@ -25,24 +22,29 @@ type User struct {
 	Token  string
 }
 
-func main() { //TODO: добавить логер
+func main() { //TODO: добавить логгер
+
+	//handlerOpts := slog.HandlerOptions{
+	//	Level: slog.LevelInfo,
+	//}
+	//logger := slog.New(slog.NewTextHandler(os.Stdout, &handlerOpts))
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	err := utils.CachingTemplates()
 	if err != nil {
-		log.Fatal("Failed to initialize templates:", err)
+		logger.Error("Failed to initialize templates:", err)
+		os.Exit(1)
 	}
 
-	db, err := database.InitializeDB("./database.db")
+	db, err := database.InitializeDB("./database.db", logger)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("Database initialization failed", "error", err)
+		os.Exit(1)
 	}
-
-	logInfo := log.New(os.Stdout, "SkufInfo: ", log.Ldate|log.Ltime|log.Llongfile)
-	logWarn := log.New(os.Stdout, "SkufWarning: ", log.Ldate|log.Ltime|log.Llongfile)
-	logError := log.New(os.Stderr, "SkufError: ", log.Ldate|log.Ltime|log.Llongfile)
 
 	app := Application{
-		Log:              Logger{logInfo, logWarn, logError},
+		Log:              logger,
 		Store:            database.CreateDataStore(db),
 		UserSessionCache: make(map[string]User),
 	}

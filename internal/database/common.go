@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 )
 
 type DataStore struct {
@@ -17,11 +18,13 @@ func CreateDataStore(db *sql.DB) *DataStore {
 	}
 }
 
-func InitializeDB(dataSourceName string) (*sql.DB, error) {
+func InitializeDB(dataSourceName string, logger *slog.Logger) (*sql.DB, error) {
 	var err error
 	DB, err := sql.Open("sqlite3", dataSourceName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
+	} else {
+		logger.Info("DB OK")
 	}
 
 	err = DB.Ping()
