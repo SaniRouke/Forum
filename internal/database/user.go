@@ -58,7 +58,6 @@ func (u *userDBMethods) CheckToken(token string) (bool, error) {
 	query := "SELECT COUNT(*) FROM sessions WHERE token = ?"
 	err := u.DB.QueryRow(query, token).Scan(&count)
 	if err != nil {
-		fmt.Println(err)
 		return false, err
 	}
 	return count > 0, nil
@@ -69,36 +68,28 @@ func (u *userDBMethods) GetUserBySession(token string) (User, error) {
 	query := "SELECT u.id, u.username, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token=?;"
 	err := u.DB.QueryRow(query, token).Scan(&user.ID, &user.Username, &user.Email)
 	if err != nil {
-		fmt.Println(err)
 		return user, err
 	}
 	return user, nil
 }
 
 func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation string) error {
-	// Normalize email and username by trimming spaces and converting to lowercase
+
 	email = strings.TrimSpace(strings.ToLower(email))
 	username = strings.TrimSpace(username)
 
-	// Log normalized values for debugging
 	log.Printf("Normalized username: %s", username)
 	log.Printf("Normalized email: %s", email)
 
-	// Check if username or email already exists
 	var count int
-	//var existingEmail sql.NullString
-	//
-	// Adjust query to handle cases where the email might be empty
-	//query := "SELECT COUNT(*), email FROM users WHERE LOWER(username) = LOWER(?) OR email = ?"
+
 	query := "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)"
 	err := u.DB.QueryRow(query, username, email).Scan(&count)
 	if err != nil {
 		return fmt.Errorf("failed to check existing user: %v", err)
 	}
 
-	// Debug output to understand what's being retrieved
 	log.Printf("User count: %d", count)
-	//log.Printf("Existing email: %v", existingEmail.String)
 
 	if count > 0 {
 		return errors.New("username or email already exists")
@@ -128,10 +119,11 @@ func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 	query := "SELECT password_hash FROM users WHERE username = ? OR email = ?"
 	err := u.DB.QueryRow(query, identifier, identifier).Scan(&storedHash)
 	if err == sql.ErrNoRows {
-		log.Println("User not found:", identifier)
+
+		log.Println("user not found:", identifier)
 		return false, nil
 	} else if err != nil {
-		log.Println("Database error:", err)
+		log.Println("database error:", err)
 		return false, err
 	}
 

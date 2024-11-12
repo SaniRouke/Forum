@@ -22,14 +22,14 @@ func InitializeDB(dataSourceName string, logger *slog.Logger) (*sql.DB, error) {
 	var err error
 	DB, err := sql.Open("sqlite3", dataSourceName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %v", err)
+		return nil, fmt.Errorf("failed to open database: %v", err) //TODO: change error
 	} else {
-		logger.Info("DB OK")
+		logger.Info("database successfully initialized")
 	}
 
 	err = DB.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("failed to ping database: %v", err)
+		return nil, fmt.Errorf("failed to ping database: %v", err) //TODO: change error
 	}
 
 	return DB, nil

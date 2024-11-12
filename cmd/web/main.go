@@ -3,7 +3,6 @@ package main
 import (
 	"forum/cmd/utils"
 	"forum/internal/database"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -49,7 +48,8 @@ func main() { //TODO: добавить логгер
 		UserSessionCache: make(map[string]User),
 	}
 
-	log.Println("Listening on http://localhost:8080...")
+	logger.Info("Listening on http://localhost:8080...")
 	serverErr := http.ListenAndServe(":8080", app.routes())
-	log.Fatal(serverErr)
+	logger.Error(serverErr.Error())
+	os.Exit(1)
 }

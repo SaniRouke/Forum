@@ -11,13 +11,9 @@ func (app *Application) routes() *http.ServeMux {
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
 
-	mux.HandleFunc("/", app.handlerHome) // panic: pattern "/static/"  conflicts with pattern "GET /"
+	mux.HandleFunc("/", app.handlerHome)
 	mux.HandleFunc("GET /post", app.handlerPostView)
-
 	mux.HandleFunc("GET /user", app.authMW(app.handlerUserPage))
-
-	//mux.HandleFunc("GET /", app.handlerShowUserPost)
-
 	mux.HandleFunc("POST /react", app.handlerReactToPost)
 	mux.HandleFunc("POST /comment", app.handlerComment)
 	mux.HandleFunc("POST /comment-react", app.handlerReactToComment)

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,17 +11,16 @@ import (
 func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
-		utils.ErrorPage(w, http.StatusNotFound, "Page not found")
+		utils.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		app.Log.Info("Page not found by (polzovatel dolboeb)")
 		return
 	}
 
 	if r.Method != "GET" {
-		utils.ErrorPage(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.ErrorPage(w, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
-	// FILTER
 	selectedCategories := r.URL.Query()["categories"]
 
 	var allPosts []database.Post
@@ -81,36 +78,36 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
-		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID") //TODO: make constnts
+		utils.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest)) //TODO: make constnts
 		return
 	}
 	idInt, err := strconv.Atoi(id)
 	if err != nil || idInt < 1 {
-		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		utils.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
 	user, err := app.GetUserSession(r)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 
 	post, err := app.Store.Post.GetPost(id, user.ID)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Println(err)
+		utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		app.Log.Error(err.Error())
 		return
 	}
 
 	if post.ID == 0 {
-		utils.ErrorPage(w, http.StatusNotFound, "Post not found")
+		utils.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
 
 	comments, err := app.Store.Post.GetComments(id, user.ID)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Println(err)
+		utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		app.Log.Error(err.Error())
 		return
 	}
 
@@ -127,7 +124,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 
 	err = utils.RenderTemplate(w, "post.html", data, http.StatusOK)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 }
 
@@ -158,7 +155,7 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	case "posts":
 		posts, err = app.Store.Post.GetPostsByUser(user.ID)
 		if err != nil {
-			utils.ErrorPage(w, http.StatusInternalServerError, "Failed to retrieve your posts.")
+			utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			return
 		}
 		pageTitle = "My Posts"
@@ -166,16 +163,16 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	case "comments":
 		posts, err = app.Store.Post.GetPostsWithUserComments(user.ID)
 		if err != nil {
-			utils.ErrorPage(w, http.StatusInternalServerError, "Failed to retrieve posts with your comments.")
+			utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			return
 		}
-		pageTitle = "Posts with My Comments"
+		pageTitle = "Posts With My Comments"
 
 	case "reactions":
 		posts, err = app.Store.Post.GetPostsWithUserReactions(user.ID)
 		if err != nil {
-			fmt.Println(err)
-			utils.ErrorPage(w, http.StatusInternalServerError, "Failed to retrieve posts with your reactions.")
+			utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			app.Log.Error(err.Error())
 			return
 		}
 		pageTitle = "My Reactions"
@@ -197,6 +194,6 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 
 	err = utils.RenderTemplate(w, "user.html", data, http.StatusOK)
 	if err != nil {
-		log.Println("Error rendering template:", err)
+		app.Log.Error("error rendering template:", err)
 	}
 }

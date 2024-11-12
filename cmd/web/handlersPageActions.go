@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 	user, err := app.GetUserSession(r)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 
 	switch {
@@ -32,7 +31,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 		categoriesFromDB, err := app.Store.Post.GetCategories()
 		if err != nil {
-			log.Println(err)
+			app.Log.Error(err.Error())
 		}
 		data := struct {
 			//Post internal.Post
@@ -46,7 +45,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 		err = utils.RenderTemplate(w, "create.html", data, http.StatusOK)
 		if err != nil {
-			log.Println(err)
+			app.Log.Error(err.Error())
 		}
 
 	case r.Method == http.MethodPost:
@@ -55,7 +54,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		body := r.FormValue("body")
 
 		if !utils.IsValidInput(topic) || !utils.IsValidInput(body) {
-			utils.ErrorPage(w, http.StatusBadRequest, "Write a normal post, bro.")
+			utils.ErrorPage(w, http.StatusBadRequest, "Write A Normal Post, Bro")
 			return
 		}
 		//if len(r.PostForm["categories"]) == 0 {
@@ -71,7 +70,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		fmt.Println(postForm)
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
-			log.Println(err)
+			app.Log.Error(err.Error())
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -92,14 +91,14 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(postID)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		utils.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
 	err = app.Store.Post.AddComment(id, user.ID, commentBody, date)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, "Unable to add comment")
-		log.Println(err)
+		utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		app.Log.Error(err.Error())
 		return
 	}
 	http.Redirect(w, r, "/post?id="+postID, http.StatusSeeOther)
@@ -125,12 +124,12 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	}
 	intPostID, err := strconv.Atoi(postID)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 
 	currentReaction, err := app.Store.Post.CheckPostReaction(intPostID, userID)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 
 	switch {
@@ -143,7 +142,7 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err != nil {
-		log.Println("Error updating reaction:", err)
+		app.Log.Error("error updating reaction:", err)
 	}
 
 	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)
@@ -170,12 +169,12 @@ func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Req
 	}
 	intCommentID, err := strconv.Atoi(commentID)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 
 	currentReaction, err := app.Store.Post.CheckCommentReaction(intCommentID, userID)
 	if err != nil {
-		log.Println(err)
+		app.Log.Error(err.Error())
 	}
 
 	switch {
@@ -188,7 +187,7 @@ func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Req
 	}
 
 	if err != nil {
-		log.Println("Error updating reaction:", err)
+		app.Log.Error("Error updating reaction:", err)
 	}
 
 	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)

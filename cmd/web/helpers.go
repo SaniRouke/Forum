@@ -7,6 +7,9 @@ import (
 	"net/http"
 )
 
+const InvalidPostID = "Invalid Post ID"
+const PostNotFound = "Post Not Found"
+
 func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := app.GetUserSession(r)
@@ -34,7 +37,6 @@ func (app *Application) SaveUserSession(token string) error {
 
 	user, err := app.Store.User.GetUserBySession(token)
 	if err != nil {
-		fmt.Println("УЗЕР")
 		return err
 	}
 
@@ -46,8 +48,6 @@ func (app *Application) SaveUserSession(token string) error {
 	}
 
 	app.UserSessionCache[token] = userForHandler
-	fmt.Println(app.UserSessionCache)
-	fmt.Println("ФИНИШ ХУИНИШ")
 	return nil
 }
 
@@ -59,7 +59,7 @@ func (app *Application) GetUserSession(r *http.Request) (User, error) {
 
 	user, ok := app.UserSessionCache[tokenCookie.Value]
 	if !ok {
-		return User{}, fmt.Errorf("Нету юзера, нету сессии, ну типа того")
+		return User{}, fmt.Errorf("Нету юзера, нету сессии, ну типа того") //TODO: change this error
 	}
 	return user, nil
 }
@@ -68,7 +68,7 @@ func GetUserFromContext(r *http.Request) (User, error) {
 	var userForTemplate User
 	user, ok := r.Context().Value("user").(database.User)
 	if !ok {
-		return userForTemplate, fmt.Errorf("Юзер-хуюзер не найден Арара")
+		return userForTemplate, fmt.Errorf("Юзер-хуюзер не найден Арара") //TODO: change this error
 	} else {
 		userForTemplate.Name = user.Username
 		userForTemplate.IsAuth = true
