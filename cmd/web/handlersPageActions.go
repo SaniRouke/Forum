@@ -11,12 +11,6 @@ import (
 	"time"
 )
 
-/*
-TODO: 2 pages: likes, my post
-TODO: Добавить отображение пользователя
-TODO: User page
-*/
-
 var ErrorUserExist = errors.New("user already exist")
 
 func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request) {

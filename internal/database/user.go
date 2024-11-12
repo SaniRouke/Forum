@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 )
 
 type userDBMethods struct {
-	DB *sql.DB
+	DB     *sql.DB
+	Logger *slog.Logger
 }
 
 type User struct {
@@ -34,8 +35,11 @@ type UserDBInterface interface {
 	DeletePreviousUserSession(user_id int) error
 }
 
-func DataUserWorkerCreation(db *sql.DB) *userDBMethods {
-	return &userDBMethods{DB: db}
+func DataUserWorkerCreation(db *sql.DB, logger *slog.Logger) *userDBMethods {
+	return &userDBMethods{
+		DB:     db,
+		Logger: logger,
+	}
 }
 
 func (u *userDBMethods) CreateSessionInDB(userID int) (string, error) {
@@ -78,24 +82,19 @@ func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 	email = strings.TrimSpace(strings.ToLower(email))
 	username = strings.TrimSpace(username)
 
-	log.Printf("Normalized username: %s", username)
-	log.Printf("Normalized email: %s", email)
-
 	var count int
 
 	query := "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)"
 	err := u.DB.QueryRow(query, username, email).Scan(&count)
+
 	if err != nil {
 		return fmt.Errorf("failed to check existing user: %v", err)
 	}
-
-	log.Printf("User count: %d", count)
 
 	if count > 0 {
 		return errors.New("username or email already exists")
 	}
 
-	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %v", err)
@@ -112,30 +111,27 @@ func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 }
 
 func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, error) {
-	var storedHash string
 
-	log.Println("Attempting to authenticate:", identifier)
+	var storedHash string
 
 	query := "SELECT password_hash FROM users WHERE username = ? OR email = ?"
 	err := u.DB.QueryRow(query, identifier, identifier).Scan(&storedHash)
 	if err == sql.ErrNoRows {
 
-		log.Println("user not found:", identifier)
+		u.Logger.Warn("user not found:", identifier)
 		return false, nil
 	} else if err != nil {
-		log.Println("database error:", err)
+		u.Logger.Error("database error:", err)
 		return false, err
 	}
 
-	log.Println("Password hash found, comparing...")
-
 	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
 	if err != nil {
-		log.Println("Password mismatch")
+		u.Logger.Warn("password mismatch")
 		return false, nil
 	}
 
-	log.Println("Authentication successful for:", identifier)
+	u.Logger.Info("authentication successful for:", identifier)
 	return true, nil
 }
 

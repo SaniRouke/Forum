@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"log/slog"
 	"strings"
 	"time"
 )
 
 type postDBMethods struct {
-	DB *sql.DB
+	DB     *sql.DB
+	Logger *slog.Logger
 }
 
 type PostDBInterface interface {
@@ -67,13 +69,12 @@ type CreatePostForm struct {
 	UserID   int
 }
 
-func DataPostWorkerCreation(db *sql.DB) *postDBMethods {
-	return &postDBMethods{DB: db}
+func DataPostWorkerCreation(db *sql.DB, logger *slog.Logger) *postDBMethods {
+	return &postDBMethods{
+		DB:     db,
+		Logger: logger,
+	}
 }
-
-//if err == sql.ErrNoRows { // TODO: ?
-//return Post{}, nil
-//}
 
 func (p *postDBMethods) CreatePost(form CreatePostForm) error {
 	date := time.Now().Format("2006-01-02 15:04:05")

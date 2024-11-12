@@ -3,12 +3,8 @@ package main
 import (
 	"fmt"
 	"forum/cmd/utils"
-	"forum/internal/database"
 	"net/http"
 )
-
-const InvalidPostID = "Invalid Post ID"
-const PostNotFound = "Post Not Found"
 
 func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -24,11 +20,6 @@ func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		//ctx := r.Context()
-		//ctx = context.WithValue(ctx, "user", user)
-		//r = r.WithContext(ctx)
-
-		// Call the next handler with the updated request
 		next(w, r)
 	}
 }
@@ -62,18 +53,6 @@ func (app *Application) GetUserSession(r *http.Request) (User, error) {
 		return User{}, fmt.Errorf("Нету юзера, нету сессии, ну типа того") //TODO: change this error
 	}
 	return user, nil
-}
-
-func GetUserFromContext(r *http.Request) (User, error) {
-	var userForTemplate User
-	user, ok := r.Context().Value("user").(database.User)
-	if !ok {
-		return userForTemplate, fmt.Errorf("Юзер-хуюзер не найден Арара") //TODO: change this error
-	} else {
-		userForTemplate.Name = user.Username
-		userForTemplate.IsAuth = true
-	}
-	return userForTemplate, nil
 }
 
 func (app *Application) ServerErr(w http.ResponseWriter, err error) {

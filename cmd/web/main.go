@@ -21,24 +21,22 @@ type User struct {
 	Token  string
 }
 
-func main() { //TODO: добавить логгер
+func main() {
 
-	//handlerOpts := slog.HandlerOptions{
-	//	Level: slog.LevelInfo,
-	//}
-	//logger := slog.New(slog.NewTextHandler(os.Stdout, &handlerOpts))
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	handlerOpts := slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &handlerOpts))
 
 	err := utils.CachingTemplates()
 	if err != nil {
-		logger.Error("Failed to initialize templates:", err)
+		logger.Error("failed to initialize templates:", err)
 		os.Exit(1)
 	}
 
 	db, err := database.InitializeDB("./database.db", logger)
 	if err != nil {
-		logger.Error("Database initialization failed", "error", err)
+		logger.Error("database initialization failed", "error", err)
 		os.Exit(1)
 	}
 
