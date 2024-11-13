@@ -28,11 +28,9 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			app.Log.Error(err.Error())
 		}
 		data := struct {
-			//Post internal.Post
 			User       User
 			Categories []string
 		}{
-			//Post: post,
 			User:       user,
 			Categories: categoriesFromDB,
 		}
@@ -48,13 +46,10 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		body := r.FormValue("body")
 
 		if !utils.IsValidInput(topic) || !utils.IsValidInput(body) {
-			utils.ErrorPage(w, http.StatusBadRequest, "Write A Normal Post, Bro")
+			app.ErrorPage(w, http.StatusBadRequest, "Write A Normal Post, Bro")
 			return
 		}
-		//if len(r.PostForm["categories"]) == 0 {
-		//	utils.ErrorPage(w, http.StatusBadRequest, "Please choose at least one category.")
-		//	return
-		//}
+
 		category := strings.Join(r.PostForm["categories"], ",")
 		postForm := database.CreatePostForm{
 			topic, body, category, user.ID,
@@ -80,18 +75,18 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	postID := r.FormValue("post_id")
-	commentBody := r.FormValue("comment_body") // TODO: make constant
+	commentBody := r.FormValue("comment_body")
 	date := time.Now().Format("2006-01-02 15:04:05")
 
 	id, err := strconv.Atoi(postID)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
 	err = app.Store.Post.AddComment(id, user.ID, commentBody, date)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		app.Log.Error(err.Error())
 		return
 	}

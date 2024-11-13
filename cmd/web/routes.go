@@ -1,7 +1,6 @@
 package main
 
 import (
-	"forum/cmd/utils"
 	"net/http"
 )
 
@@ -9,7 +8,7 @@ func (app *Application) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	fileServer := http.FileServer(http.Dir("./ui/static"))
-	mux.Handle("/static/", http.StripPrefix("/static", utils.Neuter(fileServer)))
+	mux.Handle("/static/", http.StripPrefix("/static", app.Neuter(fileServer)))
 
 	mux.HandleFunc("/", app.handlerHome)
 	mux.HandleFunc("GET /post", app.handlerPostView)

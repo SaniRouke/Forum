@@ -4,7 +4,7 @@ import (
 	"bytes"
 	embed "forum/ui/html"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"unicode"
@@ -16,6 +16,7 @@ type User struct {
 }
 
 var templates *template.Template
+var logger *slog.Logger
 
 func CachingTemplates() error {
 	var err error
@@ -35,50 +36,18 @@ func RenderTemplate(w http.ResponseWriter, tmplName string, data any, statusCode
 	err := templates.ExecuteTemplate(&buf, tmplName, data)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		log.Print(err)
+		logger.Error(err.Error())
 		return err
 	}
 
 	w.WriteHeader(statusCode)
 	_, err = buf.WriteTo(w)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 		return err
 	}
 
 	return nil
-}
-
-func ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
-
-	type UserToDelete struct {
-		Name   string
-		IsAuth bool
-	}
-
-	data := struct {
-		Code    int
-		Message string
-		User    UserToDelete
-	}{
-		Code:    statusCode,
-		Message: statusMessage,
-	}
-
-	err := RenderTemplate(w, "error.html", data, statusCode)
-	if err != nil {
-		log.Print(err)
-	}
-}
-
-func Neuter(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/") {
-			ErrorPage(w, http.StatusNotFound, "page not found")
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 func IsValidInput(input string) bool {

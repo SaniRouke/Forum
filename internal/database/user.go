@@ -100,7 +100,6 @@ func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 		return fmt.Errorf("failed to hash password: %v", err)
 	}
 
-	// Insert the user into the database
 	query = "INSERT INTO users (username, email, password_hash, date_of_creation) VALUES (?, ?, ?, ?)"
 	_, err = u.DB.Exec(query, username, email, hashedPassword, dateOfCreation)
 	if err != nil {
@@ -116,8 +115,8 @@ func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 
 	query := "SELECT password_hash FROM users WHERE username = ? OR email = ?"
 	err := u.DB.QueryRow(query, identifier, identifier).Scan(&storedHash)
-	if err == sql.ErrNoRows {
 
+	if err == sql.ErrNoRows {
 		u.Logger.Warn("user not found:", identifier)
 		return false, nil
 	} else if err != nil {
@@ -127,7 +126,7 @@ func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 
 	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
 	if err != nil {
-		u.Logger.Warn("password mismatch")
+		u.Logger.Debug("password mismatch")
 		return false, nil
 	}
 

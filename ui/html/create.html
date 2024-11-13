@@ -33,16 +33,15 @@
     </form>
 </div>
 <script>
-    // Function to validate form submission
     function validateForm() {
         const checkboxes = document.querySelectorAll('input[name="categories"]');
         const isCategorySelected = [...checkboxes].some(checkbox => checkbox.checked);
 
         if (!isCategorySelected) {
             alert("Please choose at least one category before publishing your post.");
-            return false; // Prevent form submission
+            return false;
         }
-        return true; // Allow form submission
+        return true;
     }
 </script>
 </body>

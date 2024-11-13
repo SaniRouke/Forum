@@ -9,30 +9,34 @@
 <body>
 {{ template "nav" . }}
 <main class="container">
-    <h1>{{ .Post.Topic }}</h1>
+    <h1 class="post-topic">{{ .Post.Topic }}</h1>
     <div class="post-content">
         <p>{{- .Post.Body -}}</p>
     </div>
-    <p><strong>Author:</strong> {{ .Post.Author }}</p>
-    <p><strong>Category:</strong> {{ .Post.Category }}</p>
-    <p><strong>Date:</strong> {{ .Post.Date }}</p>
+    <div class="forlikes-wrapper">
+        <div>
+            <p><strong>Author:</strong> {{ .Post.Author }}</p>
+            <p><strong>Category:</strong> {{ .Post.Category }}</p>
+            <p><strong>Date:</strong> {{ .Post.Date }}</p>
+        </div>
+        <div class="post-reactions">
+            <form method="POST" action="/react" class="reaction-form">
+                <!-- Hidden inputs for post_id and user_id outside the button groups -->
+                <input type="hidden" name="post_id" value="{{ .Post.ID }}" />
+                <input type="hidden" name="user_id" value="{{ .User.ID }}" />
 
-    <div class="post-reactions">
-        <form method="POST" action="/react" class="reaction-form">
-            <!-- Hidden inputs for post_id and user_id outside the button groups -->
-            <input type="hidden" name="post_id" value="{{ .Post.ID }}" />
-            <input type="hidden" name="user_id" value="{{ .User.ID }}" />
-
-            <div class="reaction-group">
-                <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .Post.UserLiked}}active{{end}}">👍</button>
-                <span class="reaction-count">{{ .Post.Likes }}</span>
-            </div>
-            <div class="reaction-group">
-                <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button {{if .Post.UserDisliked}}active{{end}}">👎</button>
-                <span class="reaction-count">{{ .Post.Dislikes }}</span>
-            </div>
-        </form>
+                <div class="reaction-group">
+                    <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .Post.UserLiked}}active{{end}}">👍</button>
+                    <span class="reaction-count">{{ .Post.Likes }}</span>
+                </div>
+                <div class="reaction-group">
+                    <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button {{if .Post.UserDisliked}}active{{end}}">👎</button>
+                    <span class="reaction-count">{{ .Post.Dislikes }}</span>
+                </div>
+            </form>
+        </div>
     </div>
+
 
     <h2>Comments</h2>
     {{ if .Post.Comments }}
@@ -40,10 +44,11 @@
     {{ $post := .Post}}
     {{ range .Post.Comments }}
     <div class="comment-box">
-        <div class="comment-author">{{ .Author }}</div>
-        <div class="comment-body">{{ .Body }}</div>
-        <div class="comment-date">{{ .Date }}</div>
-
+        <div class="wrapper">
+            <div class="comment-author">{{ .Author }}</div>
+            <div class="comment-body">{{ .Body }}</div>
+            <div class="comment-date">{{ .Date }}</div>
+        </div>
         <div class="post-reactions">
             <form method="POST" action="/comment-react" class="reaction-form">
                 <!-- Hidden inputs for post_id and user_id outside the button groups -->

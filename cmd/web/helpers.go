@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"forum/cmd/utils"
 	"net/http"
+	"strings"
 )
 
 func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
@@ -22,6 +23,38 @@ func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, r)
 	}
+}
+
+func (app *Application) ErrorPage(w http.ResponseWriter, statusCode int, statusMessage string) {
+
+	type UserToDelete struct {
+		Name   string
+		IsAuth bool
+	}
+
+	data := struct {
+		Code    int
+		Message string
+		User    UserToDelete
+	}{
+		Code:    statusCode,
+		Message: statusMessage,
+	}
+
+	err := utils.RenderTemplate(w, "error.html", data, statusCode)
+	if err != nil {
+		app.Log.Error(err.Error())
+	}
+}
+
+func (app *Application) Neuter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (app *Application) SaveUserSession(token string) error {
@@ -56,6 +89,6 @@ func (app *Application) GetUserSession(r *http.Request) (User, error) {
 }
 
 func (app *Application) ServerErr(w http.ResponseWriter, err error) {
-	utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	app.Log.Error(err.Error())
 }

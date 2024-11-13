@@ -11,13 +11,13 @@ import (
 func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
-		utils.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		app.Log.Info("Page not found by (polzovatel dolboeb)")
 		return
 	}
 
 	if r.Method != "GET" {
-		utils.ErrorPage(w, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
+		app.ErrorPage(w, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -68,22 +68,17 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//func (app *Application) handlerShowUserPost(w http.ResponseWriter, r *http.Request) {
-//	app.Store.Post.GetPostsByUser()
-//}
-
-// TODO: добавить atoi проверку id - валидация
 func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
-		utils.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest)) //TODO: make constnts
+		app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
 	idInt, err := strconv.Atoi(id)
 	if err != nil || idInt < 1 {
-		utils.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
@@ -94,19 +89,19 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 
 	post, err := app.Store.Post.GetPost(id, user.ID)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		app.Log.Error(err.Error())
 		return
 	}
 
 	if post.ID == 0 {
-		utils.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
 
 	comments, err := app.Store.Post.GetComments(id, user.ID)
 	if err != nil {
-		utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		app.Log.Error(err.Error())
 		return
 	}
@@ -135,27 +130,24 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Add IsAuth field to the user struct for template use
 	userData := struct {
 		User
 		IsAuth bool
 	}{
 		User:   user,
-		IsAuth: true, // Set to true because user is authenticated
+		IsAuth: true,
 	}
 
-	// Initialize variables for data
 	var posts []database.Post
 	var pageTitle string
 
-	// Determine which section the user is trying to view
 	action := r.URL.Query().Get("action")
 
 	switch action {
 	case "posts":
 		posts, err = app.Store.Post.GetPostsByUser(user.ID)
 		if err != nil {
-			utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			return
 		}
 		pageTitle = "My Posts"
@@ -163,7 +155,7 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	case "comments":
 		posts, err = app.Store.Post.GetPostsWithUserComments(user.ID)
 		if err != nil {
-			utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			return
 		}
 		pageTitle = "Posts With My Comments"
@@ -171,7 +163,7 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	case "reactions":
 		posts, err = app.Store.Post.GetPostsWithUserReactions(user.ID)
 		if err != nil {
-			utils.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			app.Log.Error(err.Error())
 			return
 		}
@@ -181,7 +173,6 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 		pageTitle = "User Profile"
 	}
 
-	// Combine user data and other template data into a single struct
 	data := struct {
 		User      interface{}
 		Posts     []database.Post

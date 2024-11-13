@@ -42,12 +42,28 @@ func main() {
 
 	app := Application{
 		Log:              logger,
-		Store:            database.CreateDataStore(db),
+		Store:            database.CreateDataStore(db, logger),
 		UserSessionCache: make(map[string]User),
 	}
 
 	logger.Info("Listening on http://localhost:8080...")
+
 	serverErr := http.ListenAndServe(":8080", app.routes())
 	logger.Error(serverErr.Error())
 	os.Exit(1)
 }
+
+//interfaceFeature([]io.Writer{os.Stdin})
+//
+//func interfaceFeature(writers []io.Writer) {
+//	for _, w := range writers {
+//		fmt.Fprintln(w)
+//	}
+//}
+//
+//type MyStruct struct {
+//}
+//
+//func (ms *MyStruct) Write() {
+//
+//}

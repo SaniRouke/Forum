@@ -158,6 +158,7 @@ button:hover, .action-button:hover {
 .comment-body {
     font-size: 1em;
     margin-bottom: 10px;
+    overflow-x: auto;
 }
 
 .comment-date {
@@ -275,10 +276,13 @@ button:hover, .action-button:hover {
     background-color: rgb(195, 146, 52);
 }
 
-
 .post-header {
     display: flex;
     align-items: center;
+}
+
+.post-topic {
+    overflow-x: auto;
 }
 
 .post-header a {
@@ -287,12 +291,19 @@ button:hover, .action-button:hover {
     margin-right: 10px;
     text-decoration: none;
     color: #000;
+    overflow-x: auto
 }
 
 .post-likes {
+    min-width: 80px;
     font-size: 0.9em;
     color: #888;
     margin-left: auto;
+}
+
+.forlikes-wrapper {
+    display: flex;
+    justify-content: space-between;
 }
 
 .post-info {
