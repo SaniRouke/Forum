@@ -26,11 +26,11 @@
                 <input type="hidden" name="user_id" value="{{ .User.ID }}" />
 
                 <div class="reaction-group">
-                    <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .Post.UserLiked}}active{{end}}">👍</button>
+                    <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .Post.UserLiked}}active{{end}}">🍺</button>
                     <span class="reaction-count">{{ .Post.Likes }}</span>
                 </div>
                 <div class="reaction-group">
-                    <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button {{if .Post.UserDisliked}}active{{end}}">👎</button>
+                    <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button {{if .Post.UserDisliked}}active{{end}}">🍼</button>
                     <span class="reaction-count">{{ .Post.Dislikes }}</span>
                 </div>
             </form>
@@ -57,11 +57,11 @@
                 <input type="hidden" name="user_id" value="{{ $user.ID }}" />
 
                 <div class="reaction-group">
-                    <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .UserLiked}}active{{end}}">👍</button>
+                    <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .UserLiked}}active{{end}}">🍺</button>
                     <span class="reaction-count">{{ .Likes }}</span>
                 </div>
                 <div class="reaction-group">
-                    <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button {{if .UserDisliked}}active{{end}}">👎</button>
+                    <button type="submit" name="reaction" value="dislike" class="reaction-button dislike-button {{if .UserDisliked}}active{{end}}">🍼</button>
                     <span class="reaction-count">{{ .Dislikes }}</span>
                 </div>
             </form>

@@ -1,5 +1,5 @@
 # Use the official Golang image as the base image
-FROM golang:1.22.5-alpine
+FROM golang:1.23.1-alpine
 
 # Install necessary C libraries for SQLite3
 RUN apk add --no-cache gcc musl-dev

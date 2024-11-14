@@ -1,16 +1,14 @@
 <h1>forum</h1>
 
 ## About
-## Features
+This forum is made for skufs. If you are one of us, be welcome to [skuf.life](http://skuf.life).
+
+## Audit
+[Audit list is here ->](https://github.com/01-edu/public/tree/master/subjects/forum/audit)
 
 ## Usage
 
 The project is written with **Go version 1.23.1**. If you have older version of Go use **Docker** to run our forum.
-
-Skuf aller Länder, vereinigt Euch!
-Rate your Skuf level from 8 to 10.
-Are you skuf? 
-Yes, I am | Definitely not. I just want to know who is it
 
 
 **How to run Docker**
