@@ -12,7 +12,6 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
 		app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		app.Log.Info("Page not found by (polzovatel dolboeb)")
 		return
 	}
 
