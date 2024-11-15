@@ -2,6 +2,7 @@
 
 ## About
 This forum is made for skufs. If you are one of us, welcome to [skuf.life](http://skuf.life)
+The project was written on [GitHub](https://github.com/SaniRouke/Forum)
 
 ## Audit
 [Audit list is here ->](https://github.com/01-edu/public/tree/master/subjects/forum/audit)
