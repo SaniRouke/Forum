@@ -52,18 +52,3 @@ func main() {
 	logger.Error(serverErr.Error())
 	os.Exit(1)
 }
-
-//interfaceFeature([]io.Writer{os.Stdin})
-//
-//func interfaceFeature(writers []io.Writer) {
-//	for _, w := range writers {
-//		fmt.Fprintln(w)
-//	}
-//}
-//
-//type MyStruct struct {
-//}
-//
-//func (ms *MyStruct) Write() {
-//
-//}

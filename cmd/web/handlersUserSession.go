@@ -69,10 +69,11 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		username := r.FormValue("username")
+		email := r.FormValue("email")
 		password := r.FormValue("password")
 
-		isAuthenticated, err := app.Store.User.AuthenticateUser(username, password)
+		isAuthenticated, err := app.Store.User.AuthenticateUser(email, password)
+
 		if err != nil {
 			app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			app.Log.Error(err.Error())
@@ -80,11 +81,11 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !isAuthenticated {
-			app.ErrorPage(w, http.StatusUnauthorized, "Invalid username or password \n Make another shot")
+			app.ErrorPage(w, http.StatusUnauthorized, "Invalid e-mail or password")
 			return
 		}
 
-		user, err := app.Store.User.GetUser(username)
+		user, err := app.Store.User.GetUser(email)
 		if err != nil {
 			app.ErrorPage(w, http.StatusUnauthorized, "Skuf Not Found")
 			app.Log.Error(err.Error())

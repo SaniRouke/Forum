@@ -1,7 +1,7 @@
 <h1>forum</h1>
 
 ## About
-This forum is made for skufs. If you are one of us, be welcome to [skuf.life](http://skuf.life).
+This forum is made for skufs. If you are one of us, welcome to [skuf.life](http://skuf.life).
 
 ## Audit
 [Audit list is here ->](https://github.com/01-edu/public/tree/master/subjects/forum/audit)

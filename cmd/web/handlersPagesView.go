@@ -45,7 +45,7 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.GetUserSession(r)
 	if err != nil {
-		app.Log.Info("Get User Session")
+		app.Log.Info("unregistered user action")
 	}
 
 	for i := range allPosts {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
 	"net/http"
@@ -56,7 +55,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		}
 
 		err := app.Store.Post.CreatePost(postForm)
-		fmt.Println(postForm)
+
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			app.Log.Error(err.Error())
@@ -77,6 +76,11 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 	postID := r.FormValue("post_id")
 	commentBody := r.FormValue("comment_body")
 	date := time.Now().Format("2006-01-02 15:04:05")
+
+	if !utils.IsValidInput(commentBody) {
+		app.ErrorPage(w, http.StatusBadRequest, "Write A Normal Comment, Bro")
+		return
+	}
 
 	id, err := strconv.Atoi(postID)
 	if err != nil {

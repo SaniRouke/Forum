@@ -83,7 +83,7 @@ func (app *Application) GetUserSession(r *http.Request) (User, error) {
 
 	user, ok := app.UserSessionCache[tokenCookie.Value]
 	if !ok {
-		return User{}, fmt.Errorf("Нету юзера, нету сессии, ну типа того") //TODO: change this error
+		return User{}, fmt.Errorf("no registered user session")
 	}
 	return user, nil
 }

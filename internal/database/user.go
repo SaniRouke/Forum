@@ -113,8 +113,8 @@ func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 
 	var storedHash string
 
-	query := "SELECT password_hash FROM users WHERE username = ? OR email = ?"
-	err := u.DB.QueryRow(query, identifier, identifier).Scan(&storedHash)
+	query := "SELECT password_hash FROM users WHERE email = ?"
+	err := u.DB.QueryRow(query, identifier).Scan(&storedHash)
 
 	if err == sql.ErrNoRows {
 		u.Logger.Warn("user not found:", identifier)
@@ -134,10 +134,10 @@ func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 	return true, nil
 }
 
-func (u *userDBMethods) GetUser(username string) (User, error) {
+func (u *userDBMethods) GetUser(email string) (User, error) {
 	var user User
-	query := "SELECT id, username, email, password_hash FROM users WHERE username = ?;"
-	err := u.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+	query := "SELECT id, username, email, password_hash FROM users WHERE email = ?;"
+	err := u.DB.QueryRow(query, email).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 	if err == sql.ErrNoRows {
 		return User{}, nil
 	}
