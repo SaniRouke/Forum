@@ -69,6 +69,7 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
+
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
@@ -99,6 +100,12 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		for token := range app.UserSessionCache {
+			if app.UserSessionCache[token].ID == user.ID {
+				delete(app.UserSessionCache, token)
+			}
+		}
+
 		token, err := app.Store.User.CreateSessionInDB(user.ID)
 		if err != nil {
 			app.ErrorPage(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
@@ -106,7 +113,16 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		cookie := &http.Cookie{
+		oldCookie := &http.Cookie{
+			Name:     "auth_token",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   -1, // Удаление куки
+		}
+		http.SetCookie(w, oldCookie)
+
+		newCookie := &http.Cookie{
 			Name:     "auth_token",
 			Value:    token,
 			Path:     "/",
@@ -114,7 +130,7 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			MaxAge:   60 * 60 * 24,
 		}
 
-		http.SetCookie(w, cookie)
+		http.SetCookie(w, newCookie)
 
 		app.SaveUserSession(token)
 
