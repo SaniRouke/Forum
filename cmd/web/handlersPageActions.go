@@ -129,7 +129,7 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	case currentReaction == 0:
 		err = app.Store.Post.SetPostReaction(intPostID, userID, reactionToDB)
 	case currentReaction == reactionToDB:
-		app.Store.Post.DeletePostReaction(intPostID, userID)
+		err = app.Store.Post.DeletePostReaction(intPostID, userID)
 	default:
 		err = app.Store.Post.UpdatePostReaction(intPostID, userID, reactionToDB)
 	}

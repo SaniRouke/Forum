@@ -20,6 +20,9 @@ func (app *Application) authMW(next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
+		if err != nil {
+			app.Log.Error(err.Error())
+		}
 
 		next(w, r)
 	}
