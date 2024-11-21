@@ -34,6 +34,8 @@ type PostDBInterface interface {
 	CheckCommentReaction(commentID int, userID int) (int, error)
 	UpdateCommentReaction(commentID int, userID int, reaction int) error
 	DeleteCommentReaction(commentID int, userID int) error
+	DoesPostExist(postID int) (bool, error)
+	DoesCommentExist(commentID int) (bool, error)
 }
 
 type Post struct {
@@ -489,4 +491,18 @@ func (p *postDBMethods) GetPostsWithUserReactions(userID int) ([]Post, error) {
 		likedPosts = append(likedPosts, post)
 	}
 	return likedPosts, nil
+}
+
+func (p *postDBMethods) DoesPostExist(postID int) (bool, error) {
+	var exists bool
+	query := "SELECT EXISTS(SELECT 1 FROM posts WHERE id = ?)"
+	err := p.DB.QueryRow(query, postID).Scan(&exists)
+	return exists, err
+}
+
+func (p *postDBMethods) DoesCommentExist(commentID int) (bool, error) {
+	var exists bool
+	query := "SELECT EXISTS(SELECT 1 FROM comments WHERE id = ?)"
+	err := p.DB.QueryRow(query, commentID).Scan(&exists)
+	return exists, err
 }

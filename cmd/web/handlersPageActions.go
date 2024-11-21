@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +27,8 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 		categoriesFromDB, err := app.Store.Post.GetCategories()
 		if err != nil {
-			app.Log.Error(err.Error())
+			app.ServerErr(w, err)
+			return
 		}
 		data := struct {
 			User       User
@@ -50,19 +54,73 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		}
 
 		category := strings.Join(r.PostForm["categories"], ",")
+		validCategories, err := app.Store.Post.GetCategories()
+		if err != nil {
+			app.ServerErr(w, err)
+			return
+		}
+
+		isValidCategory := false
+		for _, validCategory := range validCategories {
+			if category == validCategory {
+				isValidCategory = true
+				break
+			}
+		}
+
+		if !isValidCategory {
+			app.ErrorPage(w, http.StatusBadRequest, "Don't Play With Us, Bro")
+			return
+		}
+
+		_, err = app.handleImageUpload(r)
+		if err != nil {
+			app.ErrorPage(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		postForm := database.CreatePostForm{
 			topic, body, category, user.ID,
 		}
 
-		err := app.Store.Post.CreatePost(postForm)
+		err = app.Store.Post.CreatePost(postForm)
 
 		if err != nil {
 			http.Error(w, "Unable to create post", http.StatusInternalServerError)
 			app.Log.Error(err.Error())
 			return
 		}
+
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+}
+
+func (app *Application) handleImageUpload(r *http.Request) (string, error) {
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		if err == http.ErrMissingFile {
+			// No file uploaded; it's optional
+			return "", nil
+		}
+		return "", fmt.Errorf("Error retrieving the file: %v", err)
+	}
+	defer file.Close()
+
+	dst, err := os.Create("./postImages/1.jpeg")
+	if err != nil {
+		return "", fmt.Errorf("Failed to save file: %v", err)
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		return "", fmt.Errorf("Failed to save file: %v", err)
+	}
+
+	fmt.Println("header:", header, "\nfile:", file)
+
+	return "", nil
 }
 
 func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +176,17 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	intPostID, err := strconv.Atoi(postID)
 	if err != nil {
 		app.Log.Error(err.Error())
+		return
+	}
+
+	postExists, err := app.Store.Post.DoesPostExist(intPostID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	if !postExists {
+		app.ErrorPage(w, http.StatusForbidden, "Do Not Play With Us, Bro")
+		return
 	}
 
 	currentReaction, err := app.Store.Post.CheckPostReaction(intPostID, userID)
@@ -163,6 +232,15 @@ func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Req
 	intCommentID, err := strconv.Atoi(commentID)
 	if err != nil {
 		app.Log.Error(err.Error())
+	}
+	commentExists, err := app.Store.Post.DoesCommentExist(intCommentID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	if !commentExists {
+		app.ErrorPage(w, http.StatusForbidden, "Do Not Play With Us, Bro")
+		return
 	}
 
 	currentReaction, err := app.Store.Post.CheckCommentReaction(intCommentID, userID)

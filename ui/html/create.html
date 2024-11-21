@@ -10,14 +10,15 @@
 {{ template "nav" . }}
 <div class="container">
     <h1>Create a new post about your skuffy life</h1>
-    <form method="post" action="/create" onsubmit="return validateForm()">
+    <form method="post" action="/create" enctype="multipart/form-data" onsubmit="return validateForm()">
         <label for="topic">Topic:</label>
         <input type="text" id="topic" name="topic" required>
         <br>
         <label for="body">Text:</label>
         <textarea id="body" name="body" required></textarea>
         <br>
-
+        <label for="image">Upload Image (optional):</label>
+        <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/gif">
         <ul class="category-list">
             {{ range .Categories }}
             <li class="category-item">
