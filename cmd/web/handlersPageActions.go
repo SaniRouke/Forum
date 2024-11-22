@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -45,6 +46,12 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 	case r.Method == http.MethodPost:
 
+		err := r.ParseMultipartForm(32 << 20)
+		if err != nil {
+			app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+			return
+		}
+
 		topic := r.FormValue("topic")
 		body := r.FormValue("body")
 
@@ -54,6 +61,7 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 		}
 
 		category := strings.Join(r.PostForm["categories"], ",")
+
 		validCategories, err := app.Store.Post.GetCategories()
 		if err != nil {
 			app.ServerErr(w, err)
@@ -67,20 +75,23 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 				break
 			}
 		}
-
 		if !isValidCategory {
 			app.ErrorPage(w, http.StatusBadRequest, "Don't Play With Us, Bro")
 			return
 		}
 
-		_, err = app.handleImageUpload(r)
+		imagePath, err := app.handleImageUpload(r, user)
 		if err != nil {
-			app.ErrorPage(w, http.StatusBadRequest, err.Error())
+			app.ErrorPage(w, http.StatusNotFound, err.Error())
 			return
 		}
 
 		postForm := database.CreatePostForm{
-			topic, body, category, user.ID,
+			Topic:     topic,
+			Body:      body,
+			Category:  category,
+			UserID:    user.ID,
+			ImagePath: imagePath,
 		}
 
 		err = app.Store.Post.CreatePost(postForm)
@@ -95,32 +106,57 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *Application) handleImageUpload(r *http.Request) (string, error) {
-
+func (app *Application) handleImageUpload(r *http.Request, user User) (string, error) {
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		if err == http.ErrMissingFile {
-			// No file uploaded; it's optional
-			return "", nil
+			return "", nil // No file uploaded
 		}
-		return "", fmt.Errorf("Error retrieving the file: %v", err)
+		return "", fmt.Errorf("error retrieving the file: %v", err)
 	}
 	defer file.Close()
 
-	dst, err := os.Create("./postImages/1.jpeg")
-	if err != nil {
-		return "", fmt.Errorf("Failed to save file: %v", err)
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		return "", fmt.Errorf("Failed to save file: %v", err)
+	if header.Size > 20<<20 {
+		return "", fmt.Errorf("file size exceeds the 20 MB limit")
 	}
 
-	fmt.Println("header:", header, "\nfile:", file)
+	// Validate MIME type
+	buffer := make([]byte, 512) // Read the first 512 bytes
+	_, err = file.Read(buffer)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file header: %v", err)
+	}
+	fileType := http.DetectContentType(buffer)
+	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/gif" {
+		return "", fmt.Errorf("unsupported file type: %s", fileType)
+	}
 
-	return "", nil
+	// Reset file pointer
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", fmt.Errorf("failed to reset file pointer: %v", err)
+	}
+
+	fileExtension := filepath.Ext(header.Filename)
+	if fileExtension == "" {
+		return "", fmt.Errorf("file must have a valid extension")
+	}
+
+	fileName := fmt.Sprintf("%d_userID_%d%s", time.Now().UnixNano(), user.ID, fileExtension)
+	filePath := filepath.Join("uploads", fileName)
+
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create file: %v", err)
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, file)
+	if err != nil {
+		return "", fmt.Errorf("failed to save file: %v", err)
+	}
+
+	return "/" + filePath, nil
 }
 
 func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {

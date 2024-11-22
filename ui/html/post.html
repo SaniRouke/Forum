@@ -13,6 +13,11 @@
     <div class="post-content">
         <p>{{- .Post.Body -}}</p>
     </div>
+    {{ if .Post.ImagePath}}
+    <div class="post-image">
+        <img src="{{ .Post.ImagePath }}" alt="Post Image" style="max-width: 100%; height: auto;">
+    </div>
+    {{ end }}
     <div class="forlikes-wrapper">
         <div>
             <p><strong>Author:</strong> {{ .Post.Author }}</p>

@@ -21,13 +21,10 @@ func (app *Application) handlerHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := app.Store.Post.SetPostReaction(303, 22, 1)
-	fmt.Println(err)
-
 	selectedCategories := r.URL.Query()["categories"]
 
 	var allPosts []database.Post
-	//var err error
+	var err error
 
 	if len(selectedCategories) > 0 {
 		allPosts, err = app.Store.Post.GetPostsByCategory(selectedCategories)
@@ -94,6 +91,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		app.Log.Error(err.Error())
+		fmt.Println("Here:")
 		return
 	}
 

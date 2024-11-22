@@ -46,9 +46,12 @@ func main() {
 		UserSessionCache: make(map[string]User),
 	}
 
-	logger.Info("Listening on http://localhost:8080...")
+	logger.Info("Listening on https://localhost:8443...")
 
-	serverErr := http.ListenAndServe(":8080", app.routes())
+	certFile := "tls/cert.pem"
+	keyFile := "tls/key.pem"
+
+	serverErr := http.ListenAndServeTLS(":8443", certFile, keyFile, app.routes())
 	logger.Error(serverErr.Error())
 	os.Exit(1)
 }

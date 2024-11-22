@@ -50,6 +50,7 @@ type Post struct {
 	Dislikes     int
 	UserLiked    bool
 	UserDisliked bool
+	ImagePath    string
 }
 
 type Comment struct {
@@ -65,10 +66,11 @@ type Comment struct {
 }
 
 type CreatePostForm struct {
-	Topic    string
-	Body     string
-	Category string
-	UserID   int
+	Topic     string
+	Body      string
+	Category  string
+	UserID    int
+	ImagePath string
 }
 
 func DataPostWorkerCreation(db *sql.DB, logger *slog.Logger) *postDBMethods {
@@ -80,8 +82,8 @@ func DataPostWorkerCreation(db *sql.DB, logger *slog.Logger) *postDBMethods {
 
 func (p *postDBMethods) CreatePost(form CreatePostForm) error {
 	date := time.Now().Format("2006-01-02 15:04:05")
-	query := "INSERT INTO posts (topic, body, category, user_id, date) VALUES (?, ?, ?, ?, ?);"
-	_, err := p.DB.Exec(query, form.Topic, form.Body, form.Category, form.UserID, date)
+	query := "INSERT INTO posts (topic, body, category, user_id, date, image_path) VALUES (?, ?, ?, ?, ?, ?);"
+	_, err := p.DB.Exec(query, form.Topic, form.Body, form.Category, form.UserID, date, form.ImagePath)
 	return err
 }
 
@@ -171,7 +173,7 @@ func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
 
 	var post Post
 
-	query := `SELECT p.id, p.topic, p.body, u.username, p.date, p.category,
+	query := `SELECT p.id, p.topic, p.body, u.username, p.date, p.category, p.image_path,
        COALESCE(SUM(CASE WHEN r.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
        COALESCE(SUM(CASE WHEN r.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
        FROM posts AS p 
@@ -180,7 +182,7 @@ func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
        WHERE p.id = ?
 	   GROUP BY p.id;`
 
-	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date, &post.Category, &post.Likes, &post.Dislikes)
+	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date, &post.Category, &post.ImagePath, &post.Likes, &post.Dislikes)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}

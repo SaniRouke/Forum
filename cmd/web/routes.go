@@ -10,6 +10,9 @@ func (app *Application) routes() *http.ServeMux {
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", app.Neuter(fileServer)))
 
+	imageServer := http.FileServer(http.Dir("./uploads"))
+	mux.Handle("/uploads/", http.StripPrefix("/uploads", app.Neuter(imageServer)))
+
 	mux.HandleFunc("/", app.handlerHome)
 	mux.HandleFunc("GET /post", app.handlerPostView)
 	mux.HandleFunc("GET /user", app.authMW(app.handlerUserPage))
