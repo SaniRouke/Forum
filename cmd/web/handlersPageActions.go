@@ -110,7 +110,7 @@ func (app *Application) handleImageUpload(r *http.Request, user User) (string, e
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		if err == http.ErrMissingFile {
-			return "", nil // No file uploaded
+			return "", nil
 		}
 		return "", fmt.Errorf("error retrieving the file: %v", err)
 	}
@@ -120,8 +120,7 @@ func (app *Application) handleImageUpload(r *http.Request, user User) (string, e
 		return "", fmt.Errorf("file size exceeds the 20 MB limit")
 	}
 
-	// Validate MIME type
-	buffer := make([]byte, 512) // Read the first 512 bytes
+	buffer := make([]byte, 512)
 	_, err = file.Read(buffer)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file header: %v", err)
@@ -131,7 +130,6 @@ func (app *Application) handleImageUpload(r *http.Request, user User) (string, e
 		return "", fmt.Errorf("unsupported file type: %s", fileType)
 	}
 
-	// Reset file pointer
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		return "", fmt.Errorf("failed to reset file pointer: %v", err)

@@ -118,7 +118,7 @@ func (app *Application) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			Value:    "",
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   -1, // Удаление куки
+			MaxAge:   -1,
 		}
 		http.SetCookie(w, oldCookie)
 
