@@ -13,6 +13,12 @@ func (app *Application) routes() *http.ServeMux {
 	imageServer := http.FileServer(http.Dir("./uploads"))
 	mux.Handle("/uploads/", http.StripPrefix("/uploads", app.Neuter(imageServer)))
 
+	mux.HandleFunc("/auth/google/login", app.handleGoogleLogin)
+	mux.HandleFunc("/auth/google/callback", app.handleGoogleCallback)
+
+	mux.HandleFunc("/auth/github/login", app.handleGithubLogin)
+	mux.HandleFunc("/auth/github/callback", app.handleGithubCallback)
+
 	mux.HandleFunc("/", app.handlerHome)
 	mux.HandleFunc("GET /post", app.handlerPostView)
 	mux.HandleFunc("GET /user", app.authMW(app.handlerUserPage))

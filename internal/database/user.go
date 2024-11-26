@@ -27,12 +27,13 @@ type User struct {
 type UserDBInterface interface {
 	CreateUser(username, email, password, dateOfCreation string) error
 	AuthenticateUser(identifier, password string) (bool, error)
-	GetUser(username string) (User, error)
+	GetUser(email string) (User, error)
 	CreateSessionInDB(userID int) (string, error)
 	CheckToken(token string) (bool, error)
 	GetUserBySession(token string) (User, error)
 	DeleteUserSession(token string) error
 	DeletePreviousUserSession(user_id int) error
+	UserExistsByEmail(email string) (bool, error)
 }
 
 func DataUserWorkerCreation(db *sql.DB, logger *slog.Logger) *userDBMethods {
@@ -160,4 +161,14 @@ func (u *userDBMethods) DeletePreviousUserSession(user_id int) error {
 		return err
 	}
 	return nil
+}
+
+func (u *userDBMethods) UserExistsByEmail(email string) (bool, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM users WHERE email = ?"
+	err := u.DB.QueryRow(query, email).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

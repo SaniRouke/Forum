@@ -3,6 +3,7 @@ package main
 import (
 	"forum/cmd/utils"
 	"forum/internal/database"
+	"github.com/joho/godotenv"
 	"log/slog"
 	"net/http"
 	"os"
@@ -28,7 +29,38 @@ func main() {
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &handlerOpts))
 
-	err := utils.CachingTemplates()
+	// Log the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		logger.Error("Failed to get current working directory:", err)
+	} else {
+		logger.Info("Current working directory:", cwd)
+	}
+
+	// Load the .env file
+	err = godotenv.Load(".env")
+	if err != nil {
+		logger.Warn("Error loading .env file:", err)
+	} else {
+		logger.Info(".env file loaded successfully")
+	}
+
+	// Check if environment variables are set
+	if os.Getenv("GOOGLE_CLIENT_ID") == "" {
+		logger.Warn("GOOGLE_CLIENT_ID is not set")
+	} else {
+		logger.Info("GOOGLE_CLIENT_ID is set")
+	}
+
+	if os.Getenv("GITHUB_CLIENT_ID") == "" {
+		logger.Warn("GITHUB_CLIENT_ID is not set")
+	} else {
+		logger.Info("GITHUB_CLIENT_ID is set")
+	}
+
+	// ... rest of your code ...
+
+	err = utils.CachingTemplates()
 	if err != nil {
 		logger.Error("failed to initialize templates:", err)
 		os.Exit(1)

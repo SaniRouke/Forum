@@ -2,6 +2,8 @@ package utils
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	embed "forum/ui/html"
 	"html/template"
 	"log/slog"
@@ -78,4 +80,12 @@ func IsValidPassword(password string) bool {
 		}
 	}
 	return hasLetter && hasDigit
+}
+
+func GenerateRandomPassword() string {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "defaultpassword123"
+	}
+	return hex.EncodeToString(bytes)
 }
