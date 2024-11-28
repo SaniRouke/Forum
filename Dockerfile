@@ -23,7 +23,7 @@ COPY . .
 RUN go build -o forum ./cmd/web/
 
 # Expose port 8080 to the outside world
-EXPOSE 8080
+EXPOSE 8443
 
 # Command to run the executable
 CMD ["./forum"]

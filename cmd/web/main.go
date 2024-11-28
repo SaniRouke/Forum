@@ -13,6 +13,7 @@ type Application struct {
 	Log              *slog.Logger
 	UserSessionCache map[string]User
 	Store            *database.DataStore
+	Limits           map[string]*Visitor
 }
 
 type User struct {
@@ -76,6 +77,7 @@ func main() {
 		Log:              logger,
 		Store:            database.CreateDataStore(db, logger),
 		UserSessionCache: make(map[string]User),
+		Limits:           createLimiter(),
 	}
 
 	logger.Info("Listening on https://localhost:8443...")
