@@ -7,14 +7,16 @@ import (
 )
 
 type DataStore struct {
-	User UserDBInterface
-	Post PostDBInterface
+	User         UserDBInterface
+	Post         PostDBInterface
+	Notification NotificationDBInterface
 }
 
 func CreateDataStore(db *sql.DB, logger *slog.Logger) *DataStore {
 	return &DataStore{
 		DataUserWorkerCreation(db, logger),
 		DataPostWorkerCreation(db, logger),
+		DataNotificationWorkerCreation(db, logger),
 	}
 }
 

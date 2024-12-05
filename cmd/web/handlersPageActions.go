@@ -9,12 +9,152 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 )
 
 var ErrorUserExist = errors.New("user already exist")
+
+func (app *Application) handlerEditPost(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		app.Log.Error(err.Error())
+	}
+
+	id := r.URL.Query().Get("id")
+
+	if id == "" {
+		app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil || idInt < 1 {
+		app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return
+	}
+
+	switch {
+	case r.Method == http.MethodGet:
+
+		categoriesFromDB, err := app.Store.Post.GetCategories()
+		if err != nil {
+			app.ServerErr(w, err)
+			return
+		}
+
+		post, err := app.Store.Post.GetPost(id, user.ID)
+		if err != nil {
+			app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			app.Log.Error(err.Error())
+			return
+		}
+
+		if post.ID == 0 {
+			app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+			return
+		}
+
+		type CategoryHTML struct {
+			Name      string
+			IsChecked bool
+		}
+
+		categories := func(list string) []CategoryHTML {
+			categorySlice := strings.Split(list, ",")
+			result := []CategoryHTML{}
+
+			for _, name := range categoriesFromDB {
+				result = append(result, CategoryHTML{
+					Name:      name,
+					IsChecked: slices.Contains(categorySlice, name),
+				})
+			}
+
+			return result
+		}(post.Category)
+
+		type Data struct {
+			User       User
+			Post       database.Post
+			Categories []CategoryHTML
+		}
+
+		data := &Data{
+			User:       user,
+			Categories: categories,
+			Post:       post,
+		}
+
+		err = utils.RenderTemplate(w, "edit-post.html", data, http.StatusOK)
+		if err != nil {
+			app.Log.Error(err.Error())
+		}
+
+	case r.Method == http.MethodPost:
+		err := r.ParseMultipartForm(32 << 20)
+		if err != nil {
+			app.ErrorPage(w, http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+			return
+		}
+
+		topic := r.FormValue("topic")
+		body := r.FormValue("body")
+
+		if !utils.IsValidInput(topic) || !utils.IsValidInput(body) {
+			app.ErrorPage(w, http.StatusBadRequest, "Write A Normal Post, Bro")
+			return
+		}
+
+		category := strings.Join(r.PostForm["categories"], ",")
+
+		validCategories, err := app.Store.Post.GetCategories()
+		if err != nil {
+			app.ServerErr(w, err)
+			return
+		}
+
+		isValidCategory := true
+		for _, c := range r.PostForm["categories"] {
+			if !slices.Contains(validCategories, c) {
+				isValidCategory = false
+				break
+			}
+		}
+
+		if !isValidCategory {
+			app.ErrorPage(w, http.StatusBadRequest, "Don't Play With Us, Bro")
+			fmt.Println("validCategories:", validCategories)
+			fmt.Println("category:", category)
+			return
+		}
+
+		imagePath, err := app.handleImageUpload(r, user)
+		if err != nil {
+			app.ErrorPage(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		postForm := database.CreatePostForm{
+			Topic:     topic,
+			Body:      body,
+			Category:  category,
+			UserID:    user.ID,
+			ImagePath: imagePath,
+		}
+
+		err = app.Store.Post.EditPost(idInt, postForm)
+
+		if err != nil {
+			http.Error(w, "Unable to create post", http.StatusInternalServerError)
+			app.Log.Error(err.Error())
+			return
+		}
+
+		http.Redirect(w, r, "/post?id="+id, http.StatusSeeOther)
+	}
+}
 
 func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request) {
 
@@ -68,13 +208,14 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		isValidCategory := false
-		for _, validCategory := range validCategories {
-			if category == validCategory {
-				isValidCategory = true
+		isValidCategory := true
+		for _, c := range r.PostForm["categories"] {
+			if !slices.Contains(validCategories, c) {
+				isValidCategory = false
 				break
 			}
 		}
+
 		if !isValidCategory {
 			app.ErrorPage(w, http.StatusBadRequest, "Don't Play With Us, Bro")
 			return
@@ -104,6 +245,84 @@ func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+}
+
+func (app *Application) handlerDeletePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.ErrorPage(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	postIDStr := r.URL.Query().Get("id")
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	post, err := app.Store.Post.GetPost(postIDStr, user.ID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	if post.UserID != user.ID {
+		app.ErrorPage(w, http.StatusForbidden, "You are not allowed to delete this post")
+		return
+	}
+
+	err = app.Store.Post.DeletePost(postID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (app *Application) handlerDeleteComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.ErrorPage(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	commentIDStr := r.URL.Query().Get("id")
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid comment ID")
+		return
+	}
+
+	comment, err := app.Store.Post.GetCommentByID(commentID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	if comment.UserID != user.ID {
+		app.ErrorPage(w, http.StatusForbidden, "You are not allowed to delete this comment")
+		return
+	}
+
+	err = app.Store.Post.DeleteComment(commentID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/post?id=%d", comment.PostID), http.StatusSeeOther)
 }
 
 func (app *Application) handleImageUpload(r *http.Request, user User) (string, error) {
@@ -157,6 +376,112 @@ func (app *Application) handleImageUpload(r *http.Request, user User) (string, e
 	return "/" + filePath, nil
 }
 
+func (app *Application) handlerEditComment(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		app.Log.Error(err.Error())
+		app.ErrorPage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+
+	if id == "" {
+		app.ErrorPage(w, http.StatusBadRequest, "Comment ID is required")
+		return
+	}
+
+	idInt, err := strconv.Atoi(id)
+	if err != nil || idInt < 1 {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid comment ID")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		// Fetch the comment by ID
+		comment, err := app.Store.Post.GetCommentByID(idInt)
+		if err != nil {
+			app.ErrorPage(w, http.StatusInternalServerError, "Failed to fetch comment")
+			app.Log.Error(err.Error())
+			return
+		}
+
+		if comment.ID == 0 {
+			app.ErrorPage(w, http.StatusNotFound, "Comment not found")
+			return
+		}
+
+		// Check if the user is the author of the comment
+		if comment.UserID != user.ID {
+			app.ErrorPage(w, http.StatusForbidden, "You are not allowed to edit this comment")
+			return
+		}
+
+		// Fetch the post associated with the comment (if needed)
+		post, err := app.Store.Post.GetPost(id, user.ID)
+		if err != nil {
+			app.ErrorPage(w, http.StatusInternalServerError, "Failed to fetch post")
+			app.Log.Error(err.Error())
+			return
+		}
+
+		data := struct {
+			Post    database.Post
+			Comment database.Comment
+			User    User
+		}{
+			Post:    post,
+			Comment: comment,
+			User:    user,
+		}
+
+		err = utils.RenderTemplate(w, "edit-comment.html", data, http.StatusOK)
+		if err != nil {
+			app.Log.Error(err.Error())
+		}
+
+	case http.MethodPost:
+		err := r.ParseForm()
+		if err != nil {
+			app.ErrorPage(w, http.StatusBadRequest, "Invalid form data")
+			return
+		}
+		body := r.FormValue("body")
+		if body == "" {
+			app.ErrorPage(w, http.StatusBadRequest, "Comment body cannot be empty")
+		}
+
+		comment, err := app.Store.Post.GetCommentByID(idInt)
+		if err != nil {
+			app.ErrorPage(w, http.StatusInternalServerError, "Failed to fetch comment")
+			app.Log.Error(err.Error())
+			return
+		}
+
+		if comment.ID == 0 {
+			app.ErrorPage(w, http.StatusNotFound, "Comment not found")
+			return
+		}
+
+		// Check if the user is the author of the comment
+		if comment.UserID != user.ID {
+			app.ErrorPage(w, http.StatusForbidden, "You are not allowed to edit this comment")
+			return
+		}
+
+		comment.Body = body
+
+		err = app.Store.Post.EditComment(comment)
+		if err != nil {
+			app.ErrorPage(w, http.StatusInternalServerError, "Failed to update comment")
+			app.Log.Error(err.Error())
+			return
+		}
+		http.Redirect(w, r, fmt.Sprintf("/post?id=%d", comment.PostID), http.StatusSeeOther)
+	}
+}
+
 func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.GetUserSession(r)
@@ -186,6 +511,28 @@ func (app *Application) handlerComment(w http.ResponseWriter, r *http.Request) {
 		app.Log.Error(err.Error())
 		return
 	}
+
+	post, err := app.Store.Post.GetPost(postID, user.ID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	if post.UserID != user.ID {
+		notification := database.Notification{
+			UserID:          post.UserID,
+			InitiatorUserID: user.ID,
+			PostID:          id,
+			CommentID:       nil,
+			Type:            "comment",
+			Date:            time.Now().Format("2006-01-02 15:04:05"),
+		}
+		err = app.Store.Notification.CreateNotification(notification)
+		if err != nil {
+			app.Log.Error("Error creating notification:", err)
+		}
+	}
+
 	http.Redirect(w, r, "/post?id="+postID, http.StatusSeeOther)
 
 }
@@ -240,7 +587,25 @@ func (app *Application) handlerReactToPost(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		app.Log.Error("error updating reaction:", err)
 	}
-
+	post, err := app.Store.Post.GetPost(postID, userID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	if post.UserID != userID {
+		notification := database.Notification{
+			UserID:          post.UserID,
+			InitiatorUserID: userID,
+			PostID:          intPostID,
+			CommentID:       nil,
+			Type:            "like", // or "dislike" based on the reaction
+			Date:            time.Now().Format("2006-01-02 15:04:05"),
+		}
+		err = app.Store.Notification.CreateNotification(notification)
+		if err != nil {
+			app.Log.Error("Error creating notification:", err)
+		}
+	}
 	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)
 
 }

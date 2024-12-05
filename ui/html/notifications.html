@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Notifications</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+{{ template "nav" . }}
+<main class="container">
+  <h1>Notifications</h1>
+  {{ if .Notifications }}
+  <ul>
+    {{ range .Notifications }}
+    <li>
+      {{ if eq .Type "like" }}
+      <p>{{ .InitiatorUsername }} liked your post <a href="/post?id={{ .PostID }}">View Post</a></p>
+      {{ else if eq .Type "dislike" }}
+      <p>{{ .InitiatorUsername }} disliked your post <a href="/post?id={{ .PostID }}">View Post</a></p>
+      {{ else if eq .Type "comment" }}
+      <p>{{ .InitiatorUsername }} commented on your post <a href="/post?id={{ .PostID }}">View Post</a></p>
+      {{ end }}
+      <p>Date: {{ .Date }}</p>
+      {{ if not .Read }}
+      <form method="POST" action="/notifications/mark-as-read">
+        <input type="hidden" name="notification_id" value="{{ .ID }}">
+        <button type="submit">Mark as Read</button>
+      </form>
+      {{ end }}
+    </li>
+    {{ end }}
+  </ul>
+  {{ else }}
+  <p>You have no notifications.</p>
+  {{ end }}
+</main>
+</body>
+</html>

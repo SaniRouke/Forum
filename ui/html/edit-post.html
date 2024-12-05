@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Post</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" type="image/webp" href="/static/images/doom_fav.webp">
+</head>
+<body>
+{{ template "nav" . }}
+<div class="container">
+    <h1>Edit your skuffy post</h1>
+    <form method="post" action="/edit-post?id={{.Post.ID}}" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <label for="topic">Topic:</label>
+        <input  type="text" id="topic" name="topic" value="{{.Post.Topic}}" required>
+        <br>
+        <label for="body">Text:</label>
+        <textarea id="body" name="body" required>{{.Post.Body}}</textarea>
+        <br>
+        <label for="image">Upload Image (if you want):</label>
+        <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/gif">
+        <br>
+        <ul class="category-list">
+            {{ range .Categories }}
+            <li class="category-item">
+                <input class="input" type="checkbox" name="categories" id="category-{{.Name}}" value="{{.Name}}" {{if .IsChecked}}checked{{end}}>
+                <label class="label" for="category-{{.Name}}">{{.Name}}</label>
+            </li>
+            {{ end }}
+        </ul>
+        <br>
+        <p>Choose one or more categories before publishing your post.</p>
+        <br>
+        <button type="submit" class="action-button">Publish</button>
+    </form>
+</div>
+<script>
+    function validateForm() {
+        const checkboxes = document.querySelectorAll('input[name="categories"]');
+        const isCategorySelected = [...checkboxes].some(checkbox => checkbox.checked);
+
+        if (!isCategorySelected) {
+            alert("Please choose at least one category before publishing your post.");
+            return false;
+        }
+        return true;
+    }
+</script>
+</body>
+</html>
+
+

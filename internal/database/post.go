@@ -16,9 +16,12 @@ type postDBMethods struct {
 
 type PostDBInterface interface {
 	CreatePost(form CreatePostForm) error
+	EditPost(postID int, form CreatePostForm) error
 	GetPost(id string, userID int) (Post, error)
 	GetAll() ([]Post, error)
 	AddComment(postID int, userID int, commentBody string, date string) error
+	GetCommentByID(commentID int) (Comment, error)
+	EditComment(comment Comment) error
 	GetComments(id string, userID int) ([]Comment, error)
 	GetCategories() ([]string, error)
 	GetPostsByCategory([]string) ([]Post, error)
@@ -36,10 +39,13 @@ type PostDBInterface interface {
 	DeleteCommentReaction(commentID int, userID int) error
 	DoesPostExist(postID int) (bool, error)
 	DoesCommentExist(commentID int) (bool, error)
+	DeletePost(postID int) error
+	DeleteComment(postID int) error
 }
 
 type Post struct {
 	ID           int
+	UserID       int
 	Author       string
 	Topic        string
 	Body         string
@@ -56,6 +62,7 @@ type Post struct {
 type Comment struct {
 	ID           int
 	PostID       int
+	UserID       int
 	Author       string
 	Body         string
 	Date         string
@@ -84,6 +91,13 @@ func (p *postDBMethods) CreatePost(form CreatePostForm) error {
 	date := time.Now().Format("2006-01-02 15:04:05")
 	query := "INSERT INTO posts (topic, body, category, user_id, date, image_path) VALUES (?, ?, ?, ?, ?, ?);"
 	_, err := p.DB.Exec(query, form.Topic, form.Body, form.Category, form.UserID, date, form.ImagePath)
+	return err
+}
+
+func (p *postDBMethods) EditPost(postID int, form CreatePostForm) error {
+	date := time.Now().Format("2006-01-02 15:04:05")
+	query := "UPDATE posts SET topic = ?, body = ?, category = ?, image_path = ?, date = ? WHERE id = ?;"
+	_, err := p.DB.Exec(query, form.Topic, form.Body, form.Category, form.ImagePath, date, postID)
 	return err
 }
 
@@ -170,22 +184,26 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 }
 
 func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
-
 	var post Post
 
-	query := `SELECT p.id, p.topic, p.body, u.username, p.date, p.category, p.image_path,
+	query := `SELECT p.id, p.topic, p.body, p.user_id, u.username, p.date, p.category, p.image_path,
        COALESCE(SUM(CASE WHEN r.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
        COALESCE(SUM(CASE WHEN r.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
        FROM posts AS p 
        JOIN users AS u ON u.id = p.user_id 
        LEFT JOIN reactions_posts AS r ON r.post_id = p.id
        WHERE p.id = ?
-	   GROUP BY p.id;`
+       GROUP BY p.id;`
 
-	err := p.DB.QueryRow(query, id).Scan(&post.ID, &post.Topic, &post.Body, &post.Author, &post.Date, &post.Category, &post.ImagePath, &post.Likes, &post.Dislikes)
+	err := p.DB.QueryRow(query, id).Scan(
+		&post.ID, &post.Topic, &post.Body, &post.UserID, &post.Author, &post.Date, &post.Category, &post.ImagePath, &post.Likes, &post.Dislikes)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}
+	if err != nil {
+		return Post{}, err
+	}
+
 	postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
 	if err == nil {
 		post.Date = postDate.Format("02.01.2006, 15:04")
@@ -200,19 +218,19 @@ func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
 		post.UserDisliked = userDisliked
 	}
 
-	return post, err
+	return post, nil
 }
 
 func (p *postDBMethods) GetComments(id string, userID int) ([]Comment, error) {
 	query := `
-    SELECT c.id, c.post_id, c.body, u.username, c.date,
+    SELECT c.id, c.post_id, c.body, c.user_id, u.username, c.date,
     COALESCE(SUM(CASE WHEN r.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
     COALESCE(SUM(CASE WHEN r.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
     FROM comments AS c 
     JOIN users AS u ON u.id = c.user_id
     LEFT JOIN reactions_comments AS r ON r.comment_id = c.id
     WHERE c.post_id = ?
-	GROUP BY c.id, c.post_id, c.body, u.username, c.date;
+	GROUP BY c.id, c.post_id, c.body, c.user_id, u.username, c.date;
 `
 	rows, err := p.DB.Query(query, id)
 	if err != nil {
@@ -224,7 +242,7 @@ func (p *postDBMethods) GetComments(id string, userID int) ([]Comment, error) {
 
 	for rows.Next() {
 		var comment Comment
-		if err = rows.Scan(&comment.ID, &comment.PostID, &comment.Body, &comment.Author, &comment.Date, &comment.Likes, &comment.Dislikes); err != nil {
+		if err = rows.Scan(&comment.ID, &comment.PostID, &comment.Body, &comment.UserID, &comment.Author, &comment.Date, &comment.Likes, &comment.Dislikes); err != nil {
 			return nil, err
 		}
 		commentDate, err := time.Parse("2006-01-02 15:04:05", comment.Date)
@@ -249,6 +267,21 @@ func (p *postDBMethods) GetComments(id string, userID int) ([]Comment, error) {
 func (p *postDBMethods) AddComment(postID int, userID int, commentBody string, date string) error {
 	query := "INSERT INTO comments (post_id, user_id, body, date) VALUES (?, ?, ?, ?)"
 	_, err := p.DB.Exec(query, postID, userID, commentBody, date)
+	return err
+}
+
+func (p *postDBMethods) GetCommentByID(commentID int) (Comment, error) {
+	var comment Comment
+
+	err := p.DB.QueryRow("SELECT id, post_id, user_id, body FROM comments WHERE id = ?", commentID).Scan(&comment.ID, &comment.PostID, &comment.UserID, &comment.Body)
+	if err != nil {
+		return Comment{}, err
+	}
+	return comment, nil
+}
+
+func (p *postDBMethods) EditComment(comment Comment) error {
+	_, err := p.DB.Exec("UPDATE comments SET body = ? WHERE id = ?", comment.Body, comment.ID)
 	return err
 }
 
@@ -507,4 +540,39 @@ func (p *postDBMethods) DoesCommentExist(commentID int) (bool, error) {
 	query := "SELECT EXISTS(SELECT 1 FROM comments WHERE id = ?)"
 	err := p.DB.QueryRow(query, commentID).Scan(&exists)
 	return exists, err
+}
+
+func (p *postDBMethods) DeletePost(postID int) error {
+	tx, err := p.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Delete associated reactions and comments
+	// ...
+
+	// Delete the post
+	_, err = tx.Exec("DELETE FROM posts WHERE id = ?", postID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (p *postDBMethods) DeleteComment(commentID int) error {
+	tx, err := p.DB.Begin()
+	if err != nil {
+		return err
+	}
+	// Delete associated reactions and comments
+	// Delete the post
+	_, err = tx.Exec("DELETE FROM comments WHERE id = ?", commentID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

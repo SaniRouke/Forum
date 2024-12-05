@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Comment</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" type="image/webp" href="/static/images/doom_fav.webp">
+</head>
+<body>
+{{ template "nav" . }}
+<div class="container">
+    <h1>Edit Your Comment</h1>
+    <form method="post" action="/edit-comment?id={{.Comment.ID}}">
+        <p>Editing comment on post: <strong>{{.Post.Topic}}</strong></p>
+        <label for="body">Comment:</label>
+        <textarea id="body" name="body" required>{{.Comment.Body}}</textarea>
+        <br>
+        <button type="submit" class="action-button">Update Comment</button>
+    </form>
+</div>
+</body>
+</html>

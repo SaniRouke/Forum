@@ -88,6 +88,13 @@ func (app *Application) GetUserSession(r *http.Request) (User, error) {
 	if !ok {
 		return User{}, fmt.Errorf("no registered user session")
 	}
+
+	count, err := app.Store.Notification.GetUnreadNotificationCount(user.ID)
+	if err != nil {
+		return user, err
+	}
+	user.NotificationCount = count
+
 	return user, nil
 }
 

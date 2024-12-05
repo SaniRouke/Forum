@@ -17,10 +17,11 @@ type Application struct {
 }
 
 type User struct {
-	ID     int
-	Name   string
-	IsAuth bool
-	Token  string
+	ID                int
+	Name              string
+	IsAuth            bool
+	Token             string
+	NotificationCount int
 }
 
 func main() {

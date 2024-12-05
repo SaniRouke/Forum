@@ -1,10 +1,10 @@
 {{define "nav"}}
-
 <nav class="header_nav">
     <a href="/">Home</a>
     <a href="/create">Create Post</a>
     {{if .User.IsAuth}}
     <a href="/user">{{.User.Name}}</a>
+    <a href="/notifications">Notifications ({{ .User.NotificationCount }})</a>
     <form action="/logout" method="post" style="display: inline;">
         <button type="submit" class="nav-logout-button">Log Out</button>
     </form>

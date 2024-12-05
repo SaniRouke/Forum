@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -23,9 +22,9 @@ func (app *Application) rateLimiterMW(next http.HandlerFunc) http.HandlerFunc {
 			app.Limits[r.RemoteAddr] = &Visitor{}
 		}
 
-		for keyIP, visitor := range app.Limits {
-			fmt.Println("ip:", keyIP, "\t", "visitor counter:", visitor.Count)
-		}
+		//for keyIP, visitor := range app.Limits {
+		//	fmt.Println("ip:", keyIP, "\t", "visitor counter:", visitor.Count)
+		//}
 
 		next.ServeHTTP(w, r)
 	}

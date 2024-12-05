@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
 	"forum/cmd/utils"
 	"forum/internal/database"
 	"net/http"
@@ -91,7 +91,6 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		app.Log.Error(err.Error())
-		fmt.Println("Here:")
 		return
 	}
 
@@ -188,4 +187,78 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		app.Log.Error("error rendering template:", err)
 	}
+}
+
+func (app *Application) handlerNotifications(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	notifications, err := app.Store.Notification.GetNotificationsByUserID(user.ID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	data := struct {
+		User          User
+		Notifications []database.Notification
+	}{
+		User:          user,
+		Notifications: notifications,
+	}
+
+	err = utils.RenderTemplate(w, "notifications.html", data, http.StatusOK)
+	if err != nil {
+		app.Log.Error("error rendering template:", err)
+	}
+}
+
+func (app *Application) handlerMarkNotificationAsRead(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	// Ensure the request method is POST
+	if r.Method != http.MethodPost {
+		app.ErrorPage(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	notificationIDStr := r.FormValue("notification_id")
+	notificationID, err := strconv.Atoi(notificationIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid notification ID")
+		return
+	}
+
+	// Retrieve the notification from the database
+	notification, err := app.Store.Notification.GetNotificationByID(notificationID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			app.ErrorPage(w, http.StatusNotFound, "Notification not found")
+		} else {
+			app.ServerErr(w, err)
+		}
+		return
+	}
+
+	// Check if the notification belongs to the current user
+	if notification.UserID != user.ID {
+		app.ErrorPage(w, http.StatusForbidden, "You are not authorized to perform this action")
+		return
+	}
+
+	// Mark the notification as read
+	err = app.Store.Notification.MarkNotificationAsRead(notificationID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
 }
