@@ -18,6 +18,24 @@
     </form>
   </div>
 
+  {{if eq .User.Role "moderator" }}
+  <p>
+     <a href="/moderator">Moderator's page</a>
+  </p>
+  {{ end }}
+
+  {{if eq .User.Role "admin" }}
+  <p>
+      <a href="/admin">Admin's page</a>
+  </p>
+  {{ end }}
+
+  {{if eq .User.Role "user" }}
+  <p>
+    <a href="/promote">I want to be a moderator!</a>
+  </p>
+  {{ end }}
+
   {{ if .Posts }}
   <h2>{{ .PageTitle }}</h2>
   <ul>
@@ -31,6 +49,7 @@
   {{ else if .PageTitle }}
   <p>No posts found in this section.</p>
   {{ end }}
+
 </main>
 </body>
 </html>

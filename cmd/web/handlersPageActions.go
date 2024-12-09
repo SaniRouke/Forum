@@ -156,6 +156,119 @@ func (app *Application) handlerEditPost(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (app *Application) handlerRequestToModer(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if user.Role != "user" {
+		app.ErrorPage(w, http.StatusForbidden, "You are already in power")
+		return
+	}
+
+	err = app.Store.User.PromoteMe(user.ID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/user", http.StatusSeeOther)
+}
+
+func (app *Application) handlerPromoteToModer(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "You are not an admin")
+		return
+	}
+	userIDStr := r.URL.Query().Get("id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	err = app.Store.User.PromoteToModer(userID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
+}
+
+func (app *Application) handlerApprovePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.ErrorPage(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	postIDStr := r.URL.Query().Get("id")
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	if user.Role != "admin" && user.Role != "moderator" {
+		app.ErrorPage(w, http.StatusForbidden, "You do not have permissions to access this page.")
+		return
+	}
+
+	err = app.Store.Post.ApprovePost(postID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (app *Application) handlerReportPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.ErrorPage(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	postIDStr := r.URL.Query().Get("id")
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	if user.Role != "moderator" {
+		app.ErrorPage(w, http.StatusForbidden, "You do not have reporting rights.")
+		return
+	}
+
+	err = app.Store.Post.ReportPost(user.ID, postID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	http.Redirect(w, r, "/post?id="+postIDStr, http.StatusSeeOther)
+}
+
 func (app *Application) handlerCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.GetUserSession(r)

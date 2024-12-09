@@ -66,10 +66,11 @@ func (app *Application) SaveUserSession(token string) error {
 	if err != nil {
 		return err
 	}
-
+	
 	userForHandler := User{
 		ID:     user.ID,
 		Name:   user.Username,
+		Role:   user.Role,
 		IsAuth: true,
 		Token:  token,
 	}

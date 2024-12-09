@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
 	"net/http"
@@ -93,7 +94,7 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		app.Log.Error(err.Error())
 		return
 	}
-
+	fmt.Println("post statuuuuus:", post.Status)
 	if post.ID == 0 {
 		app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
@@ -202,12 +203,20 @@ func (app *Application) handlerNotifications(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	promotionRequests := []database.UsersForPromotion{}
+
+	if user.Role == "admin" {
+		promotionRequests, err = app.Store.User.GetPromotionRequests()
+	}
+
 	data := struct {
 		User          User
 		Notifications []database.Notification
+		Promotions    []database.UsersForPromotion
 	}{
 		User:          user,
 		Notifications: notifications,
+		Promotions:    promotionRequests,
 	}
 
 	err = utils.RenderTemplate(w, "notifications.html", data, http.StatusOK)
@@ -261,4 +270,74 @@ func (app *Application) handlerMarkNotificationAsRead(w http.ResponseWriter, r *
 	}
 
 	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
+}
+
+func (app *Application) handlerModeratorDashboard(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil || (user.Role != "moderator" && user.Role != "admin") {
+		app.ErrorPage(w, http.StatusForbidden, "You are not allowed here.")
+		return
+	}
+
+	pendingPosts, err := app.Store.Post.GetAllPending()
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	data := struct {
+		User         User
+		PendingPosts []database.Post
+	}{
+		User:         user,
+		PendingPosts: pendingPosts,
+	}
+
+	err = utils.RenderTemplate(w, "moderator-dashboard.html", data, http.StatusOK)
+	if err != nil {
+		app.Log.Error(err.Error())
+	}
+}
+
+func (app *Application) handlerAdminDashboard(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	//Check if user is admin
+	if user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "You are not allowed here.")
+		return
+	}
+
+	// Fetch categories (assuming GetCategories returns a []string)
+	categories, err := app.Store.Post.GetCategories()
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	//// Fetch reports from moderators (this is just an example method; you must implement it)
+	reports, err := app.Store.Notification.GetAllReports()
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	data := struct {
+		User       User
+		Categories []string
+		Reports    []database.Report
+	}{
+		User:       user,
+		Categories: categories,
+		Reports:    reports,
+	}
+
+	err = utils.RenderTemplate(w, "admin-dashboard.html", data, http.StatusOK)
+	if err != nil {
+		app.Log.Error("error rendering template:", err)
+	}
 }

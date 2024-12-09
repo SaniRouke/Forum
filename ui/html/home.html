@@ -26,6 +26,7 @@
         </li>
     </ul>
 </form>
+    {{ if .Posts }}
     <ul>
         {{ range .Posts }}
         <li>
@@ -37,6 +38,14 @@
         </li>
         {{ end }}
     </ul>
+    {{ else }}
+    <ul>
+        <li>
+            No approved posts yet.
+        </li>
+    </ul>
+
+    {{ end }}
 </main>
 </body>
 </html>

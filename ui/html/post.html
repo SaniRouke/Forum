@@ -10,6 +10,9 @@
 {{ template "nav" . }}
 <main class="container">
     <h1 class="post-topic">{{ .Post.Topic }}</h1>
+
+    {{if or (eq .Post.Status "approved") (or (eq .User.Role "moderator") (eq .User.Role "admin"))}}
+    <!-- Если пост одобрен, отображаем детали поста, картинки, реакции, комментарии -->
     <div class="post-content">
         <p>{{- .Post.Body -}}</p>
     </div>
@@ -26,10 +29,8 @@
         </div>
         <div class="post-reactions">
             <form method="POST" action="/react" class="reaction-form">
-
                 <input type="hidden" name="post_id" value="{{ .Post.ID }}" />
                 <input type="hidden" name="user_id" value="{{ .User.ID }}" />
-
                 <div class="reaction-group">
                     <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .Post.UserLiked}}active{{end}}">🍺</button>
                     <span class="reaction-count">{{ .Post.Likes }}</span>
@@ -41,7 +42,6 @@
             </form>
         </div>
     </div>
-
 
     <h2>Comments</h2>
     {{ if .Post.Comments }}
@@ -56,11 +56,9 @@
         </div>
         <div class="post-reactions">
             <form method="POST" action="/comment-react" class="reaction-form">
-
                 <input type="hidden" name="post_id" value="{{ $post.ID }}" />
                 <input type="hidden" name="comment_id" value="{{ .ID }}" />
                 <input type="hidden" name="user_id" value="{{ $user.ID }}" />
-
                 <div class="reaction-group">
                     <button type="submit" name="reaction" value="like" class="reaction-button like-button {{if .UserLiked}}active{{end}}">🍺</button>
                     <span class="reaction-count">{{ .Likes }}</span>
@@ -80,7 +78,6 @@
         </div>
         {{ end }}
     </div>
-
     {{ end }}
 
     {{ else }}
@@ -91,10 +88,8 @@
     <h3>Add a Comment</h3>
     <form method="POST" action="/comment">
         <input type="hidden" name="post_id" value="{{ .Post.ID }}">
-
         <label for="comment_body">Comment:</label>
         <textarea id="comment_body" name="comment_body" required></textarea>
-
         <button type="submit" class="action-button">Submit</button>
     </form>
     {{ else }}
@@ -111,8 +106,29 @@
             </form>
         </div>
         {{ end }}
-
     </div>
+
+    {{if or (eq .User.Role "moderator") (eq .User.Role "admin")}}
+    <p><em>Post is pending approval.</em></p>
+   {{ if ne .Post.Status "approved" }}
+    <form method="POST" action="/approve-post?id={{.Post.ID}}">
+        <button type="submit">Approve</button>
+    </form>
+    {{ end }}
+    <form method="POST" action="/delete-post?id={{.Post.ID}}">
+        <button type="submit">Delete</button>
+    </form>
+    {{end}}
+
+    {{if eq .User.Role "moderator" }}
+    <form method="POST" action="/report-post?id={{.Post.ID}}">
+        <button type="submit">Report</button>
+    </form>
+    {{ end }}
+
+    {{else}}
+    <p><em>This post is pending moderation and currently not available.</em></p>
+    {{end}}
 </main>
 </body>
 </html>

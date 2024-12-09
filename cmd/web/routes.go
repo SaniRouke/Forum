@@ -36,6 +36,7 @@ func (app *Application) routes() *http.ServeMux {
 
 	mux.HandleFunc("GET /edit-post", app.rateLimiterMW(app.handlerEditPost))
 	mux.HandleFunc("POST /edit-post", app.rateLimiterMW(app.handlerEditPost))
+
 	mux.HandleFunc("POST /delete-post", app.rateLimiterMW(app.handlerDeletePost))
 
 	mux.HandleFunc("GET /signup", app.rateLimiterMW(app.handlerSignup))
@@ -45,7 +46,18 @@ func (app *Application) routes() *http.ServeMux {
 	mux.HandleFunc("POST /logout", app.rateLimiterMW(app.handlerLogout))
 
 	mux.HandleFunc("GET /notifications", app.rateLimiterMW(app.authMW(app.handlerNotifications)))
-	mux.HandleFunc("/notifications/mark-as-read", app.rateLimiterMW(app.authMW(app.handlerMarkNotificationAsRead)))
+	mux.HandleFunc("POST /notifications/mark-as-read", app.rateLimiterMW(app.authMW(app.handlerMarkNotificationAsRead)))
+
+	mux.HandleFunc("GET /admin", app.rateLimiterMW(app.authMW(app.handlerAdminDashboard)))
+	mux.HandleFunc("GET /moderator", app.rateLimiterMW(app.authMW(app.handlerModeratorDashboard)))
+
+	mux.HandleFunc("POST /approve-post", app.rateLimiterMW(app.authMW(app.handlerApprovePost)))
+
+	mux.HandleFunc("POST /report-post", app.rateLimiterMW(app.authMW(app.handlerReportPost)))
+
+	mux.HandleFunc("GET /promote", app.rateLimiterMW(app.authMW(app.handlerRequestToModer)))
+
+	mux.HandleFunc("GET /promote-to-moder", app.rateLimiterMW(app.authMW(app.handlerPromoteToModer)))
 
 	return mux
 }

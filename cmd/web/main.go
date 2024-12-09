@@ -19,6 +19,7 @@ type Application struct {
 type User struct {
 	ID                int
 	Name              string
+	Role              string
 	IsAuth            bool
 	Token             string
 	NotificationCount int

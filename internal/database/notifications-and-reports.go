@@ -16,6 +16,7 @@ type NotificationDBInterface interface {
 	MarkNotificationAsRead(notificationID int) error
 	GetUnreadNotificationCount(userID int) (int, error)
 	GetNotificationByID(notificationID int) (Notification, error)
+	GetAllReports() ([]Report, error)
 }
 
 type Notification struct {
@@ -28,6 +29,13 @@ type Notification struct {
 	Read              bool
 	Date              string
 	InitiatorUsername string
+}
+
+type Report struct {
+	ID            int
+	ModeratorID   int
+	ModeratorName string
+	PostID        int
 }
 
 func DataNotificationWorkerCreation(db *sql.DB, logger *slog.Logger) *notificationDBMethods {
@@ -123,4 +131,57 @@ func (n *notificationDBMethods) GetNotificationByID(notificationID int) (Notific
 	}
 	notification.Read = readInt == 1
 	return notification, nil
+}
+
+func (n *notificationDBMethods) GetAllReports() ([]Report, error) {
+	query := `SELECT r.id, r.moderator_id, u.username, r.post_id 
+	FROM reports r
+	JOIN users u ON u.id = r.moderator_id
+	`
+	rows, err := n.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reports []Report
+	for rows.Next() {
+		var rep Report
+		err = rows.Scan(&rep.ID, &rep.ModeratorID, &rep.ModeratorName, &rep.PostID)
+		if err != nil {
+			return nil, err
+		}
+		reports = append(reports, rep)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return reports, nil
+}
+
+func (n *notificationDBMethods) GetAllPending() ([]Report, error) {
+	query := "SELECT id, moderator_id, post_id FROM reports;"
+	rows, err := n.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reports []Report
+	for rows.Next() {
+		var rep Report
+		err = rows.Scan(&rep.ID, &rep.ModeratorID, &rep.PostID)
+		if err != nil {
+			return nil, err
+		}
+		reports = append(reports, rep)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return reports, nil
 }

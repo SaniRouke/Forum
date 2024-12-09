@@ -36,7 +36,7 @@ func (app *Application) handlerSignup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := app.Store.User.CreateUser(username, email, password, dateOfCreation)
+		err := app.Store.User.CreateUser(username, email, "user", password, dateOfCreation)
 		if err != nil {
 			app.ErrorPage(w, http.StatusInternalServerError, "My fellow skuf, you are trying to use an existing email or username")
 			app.Log.Error(err.Error())

@@ -22,7 +22,7 @@ var logger *slog.Logger
 
 func CachingTemplates() error {
 	var err error
-	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html", "user.html", "edit-post.html", "edit-comment.html", "notifications.html")
+	templates, err = template.ParseFS(embed.HTMLFiles, "create.html", "error.html", "home.html", "login.html", "nav.html", "post.html", "signup.html", "user.html", "edit-post.html", "edit-comment.html", "notifications.html", "admin-dashboard.html", "moderator-dashboard.html")
 	if err != nil {
 		return err
 	}

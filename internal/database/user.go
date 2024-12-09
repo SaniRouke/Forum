@@ -20,20 +20,31 @@ type User struct {
 	ID       int
 	Username string
 	Email    string
+	Role     string
 	Password string
 	Creation time.Time
 }
 
+type UsersForPromotion struct {
+	ID   int
+	Name string
+}
+
 type UserDBInterface interface {
-	CreateUser(username, email, password, dateOfCreation string) error
+	CreateUser(username, email, role, password, dateOfCreation string) error
 	AuthenticateUser(identifier, password string) (bool, error)
 	GetUser(email string) (User, error)
+	GetUserByID(id int) (User, error)
 	CreateSessionInDB(userID int) (string, error)
 	CheckToken(token string) (bool, error)
 	GetUserBySession(token string) (User, error)
 	DeleteUserSession(token string) error
 	DeletePreviousUserSession(user_id int) error
 	UserExistsByEmail(email string) (bool, error)
+	PromoteMe(userID int) error
+	GetPromotionRequests() ([]UsersForPromotion, error)
+	PromoteToModer(userID int) error
+	DemoteToUser(userID int) error
 }
 
 func DataUserWorkerCreation(db *sql.DB, logger *slog.Logger) *userDBMethods {
@@ -70,15 +81,15 @@ func (u *userDBMethods) CheckToken(token string) (bool, error) {
 
 func (u *userDBMethods) GetUserBySession(token string) (User, error) {
 	var user User
-	query := "SELECT u.id, u.username, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token=?;"
-	err := u.DB.QueryRow(query, token).Scan(&user.ID, &user.Username, &user.Email)
+	query := "SELECT u.id, u.username, u.email, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token=?;"
+	err := u.DB.QueryRow(query, token).Scan(&user.ID, &user.Username, &user.Email, &user.Role)
 	if err != nil {
 		return user, err
 	}
 	return user, nil
 }
 
-func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation string) error {
+func (u *userDBMethods) CreateUser(username, email, password, role, dateOfCreation string) error {
 
 	email = strings.TrimSpace(strings.ToLower(email))
 	username = strings.TrimSpace(username)
@@ -101,8 +112,8 @@ func (u *userDBMethods) CreateUser(username, email, password, dateOfCreation str
 		return fmt.Errorf("failed to hash password: %v", err)
 	}
 
-	query = "INSERT INTO users (username, email, password_hash, date_of_creation) VALUES (?, ?, ?, ?)"
-	_, err = u.DB.Exec(query, username, email, hashedPassword, dateOfCreation)
+	query = "INSERT INTO users (username, email, role, password_hash, date_of_creation) VALUES (?, ?, ?, ?, ?)"
+	_, err = u.DB.Exec(query, username, email, role, hashedPassword, dateOfCreation)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
 	}
@@ -137,8 +148,8 @@ func (u *userDBMethods) AuthenticateUser(identifier, password string) (bool, err
 
 func (u *userDBMethods) GetUser(email string) (User, error) {
 	var user User
-	query := "SELECT id, username, email, password_hash FROM users WHERE email = ?;"
-	err := u.DB.QueryRow(query, email).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+	query := "SELECT id, username, email, role, password_hash FROM users WHERE email = ?;"
+	err := u.DB.QueryRow(query, email).Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.Password)
 	if err == sql.ErrNoRows {
 		return User{}, nil
 	}
@@ -171,4 +182,68 @@ func (u *userDBMethods) UserExistsByEmail(email string) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func (u *userDBMethods) GetUserByID(id int) (User, error) {
+	var user User
+	query := "SELECT username, email FROM users WHERE id = ?;"
+	err := u.DB.QueryRow(query, id).Scan(&user.Username, &user.Email)
+	if err == sql.ErrNoRows {
+		return User{}, nil
+	}
+	return user, err
+}
+
+func (u *userDBMethods) PromoteMe(userID int) error {
+	query := `DELETE FROM moderator_requests WHERE user_id = ?`
+	_, err := u.DB.Exec(query, userID)
+
+	query = `	
+	INSERT INTO moderator_requests (user_id) VALUES (?)
+	`
+	_, err = u.DB.Exec(query, userID)
+	return err
+}
+
+func (u *userDBMethods) GetPromotionRequests() ([]UsersForPromotion, error) {
+	query := `SELECT m.user_id, u.username
+	FROM moderator_requests m
+	JOIN users u ON u.id = m.user_id
+	`
+	rows, err := u.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []UsersForPromotion
+	for rows.Next() {
+		var u UsersForPromotion
+		err = rows.Scan(&u.ID, &u.Name)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (u *userDBMethods) PromoteToModer(userID int) error {
+	query := `UPDATE users SET role = 'moderator' WHERE id = ?;`
+	_, err := u.DB.Exec(query, userID)
+
+	query = `DELETE FROM moderator_requests WHERE user_id = ?`
+	_, err = u.DB.Exec(query, userID)
+	return err
+}
+
+func (u *userDBMethods) DemoteToUser(userID int) error {
+	query := `UPDATE users SET role = 'user' WHERE id = ?;`
+	_, err := u.DB.Exec(query, userID)
+	return err
 }

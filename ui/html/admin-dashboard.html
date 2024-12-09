@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+{{ template "nav" . }}
+<main class="container">
+  <h1>Admin Dashboard</h1>
+  <!-- Ссылка обратно на страницу пользователя -->
+  <p><a href="/user">Go to Your Profile</a></p>
+
+  <section>
+    <h2>Manage Categories</h2>
+    <form method="POST" action="/admin/categories/add">
+      <label>Category name: <input type="text" name="category" required></label>
+      <button type="submit">Add Category</button>
+    </form>
+
+    <ul>
+      {{range .Categories}}
+      <li>{{.}}
+        <form method="POST" action="/admin/categories/delete?name={{.}}" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+      {{end}}
+    </ul>
+  </section>
+
+  <section>
+    <h2>Reports from Moderators</h2>
+    {{if .Reports}}
+    <ul>
+      {{range .Reports}}
+      <li>
+        <a href="/post?id={{ .PostID }}">Moderator: {{ .ModeratorName }} Suspicious Post: {{ .PostID }}</a>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <p>No reports.</p>
+    {{end}}
+  </section>
+</main>
+</body>
+</html>

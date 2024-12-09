@@ -41,6 +41,9 @@ type PostDBInterface interface {
 	DoesCommentExist(commentID int) (bool, error)
 	DeletePost(postID int) error
 	DeleteComment(postID int) error
+	ApprovePost(postID int) error
+	GetAllPending() ([]Post, error)
+	ReportPost(moderID, postID int) error
 }
 
 type Post struct {
@@ -52,6 +55,7 @@ type Post struct {
 	Date         string
 	Comments     []Comment
 	Category     string
+	Status       string
 	Likes        int
 	Dislikes     int
 	UserLiked    bool
@@ -103,12 +107,13 @@ func (p *postDBMethods) EditPost(postID int, form CreatePostForm) error {
 
 func (p *postDBMethods) GetAll() ([]Post, error) {
 	query := `
-    SELECT p.id, p.topic, p.date, u.username, p.category,
+    SELECT p.id, p.topic, p.date, u.username, p.category, p.status,
            COALESCE(SUM(CASE WHEN rp.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
            COALESCE(SUM(CASE WHEN rp.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
     FROM posts p
     JOIN users u ON u.id = p.user_id
     LEFT JOIN reactions_posts rp ON rp.post_id = p.id
+    WHERE p.status = 'approved'
     GROUP BY p.id
     ORDER BY p.date DESC;
 `
@@ -123,7 +128,42 @@ func (p *postDBMethods) GetAll() ([]Post, error) {
 	for rows.Next() {
 		var post Post
 
-		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Likes, &post.Dislikes); err != nil {
+		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Status, &post.Likes, &post.Dislikes); err != nil {
+			return nil, err
+		}
+		postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
+		if err == nil {
+			post.Date = postDate.Format("02.01.2006, 15:04")
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+func (p *postDBMethods) GetAllPending() ([]Post, error) {
+	query := `
+    SELECT p.id, p.topic, p.date, u.username, p.category, p.status,
+           COALESCE(SUM(CASE WHEN rp.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
+           COALESCE(SUM(CASE WHEN rp.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
+    FROM posts p
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN reactions_posts rp ON rp.post_id = p.id
+    WHERE p.status = 'pending'
+    GROUP BY p.id
+    ORDER BY p.date DESC;
+`
+	rows, err := p.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+
+	for rows.Next() {
+		var post Post
+
+		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Status, &post.Likes, &post.Dislikes); err != nil {
 			return nil, err
 		}
 		postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
@@ -150,13 +190,14 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 	}
 
 	query := `
-    SELECT p.id, p.topic, p.date, u.username, p.category,
+    SELECT p.id, p.topic, p.date, u.username, p.category, p.status,
            COALESCE(SUM(CASE WHEN rp.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
            COALESCE(SUM(CASE WHEN rp.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
     FROM posts p
     JOIN users u ON u.id = p.user_id
     LEFT JOIN reactions_posts rp ON rp.post_id = p.id
-    WHERE ` + strings.Join(conditions, " OR ") + `
+    WHERE (` + strings.Join(conditions, " OR ") + `)
+	AND p.status = 'approved'
     GROUP BY p.id
     ORDER BY p.date DESC;
 `
@@ -170,7 +211,7 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 	var posts []Post
 	for rows.Next() {
 		var post Post
-		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Likes, &post.Dislikes); err != nil {
+		if err = rows.Scan(&post.ID, &post.Topic, &post.Date, &post.Author, &post.Category, &post.Status, &post.Likes, &post.Dislikes); err != nil {
 			return nil, err
 		}
 		postDate, err := time.Parse("2006-01-02 15:04:05", post.Date)
@@ -186,7 +227,7 @@ func (p *postDBMethods) GetPostsByCategory(categories []string) ([]Post, error) 
 func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
 	var post Post
 
-	query := `SELECT p.id, p.topic, p.body, p.user_id, u.username, p.date, p.category, p.image_path,
+	query := `SELECT p.id, p.topic, p.body, p.user_id, u.username, p.date, p.category, p.image_path, p.status,
        COALESCE(SUM(CASE WHEN r.reaction = 1 THEN 1 ELSE 0 END), 0) AS Likes,
        COALESCE(SUM(CASE WHEN r.reaction = -1 THEN 1 ELSE 0 END), 0) AS Dislikes
        FROM posts AS p 
@@ -196,7 +237,7 @@ func (p *postDBMethods) GetPost(id string, userID int) (Post, error) {
        GROUP BY p.id;`
 
 	err := p.DB.QueryRow(query, id).Scan(
-		&post.ID, &post.Topic, &post.Body, &post.UserID, &post.Author, &post.Date, &post.Category, &post.ImagePath, &post.Likes, &post.Dislikes)
+		&post.ID, &post.Topic, &post.Body, &post.UserID, &post.Author, &post.Date, &post.Category, &post.ImagePath, &post.Status, &post.Likes, &post.Dislikes)
 	if err == sql.ErrNoRows {
 		return Post{}, nil
 	}
@@ -566,8 +607,6 @@ func (p *postDBMethods) DeleteComment(commentID int) error {
 	if err != nil {
 		return err
 	}
-	// Delete associated reactions and comments
-	// Delete the post
 	_, err = tx.Exec("DELETE FROM comments WHERE id = ?", commentID)
 	if err != nil {
 		tx.Rollback()
@@ -575,4 +614,19 @@ func (p *postDBMethods) DeleteComment(commentID int) error {
 	}
 
 	return tx.Commit()
+}
+
+func (p *postDBMethods) ApprovePost(postID int) error {
+	query := "UPDATE posts SET status = 'approved' WHERE id = ?;"
+	_, err := p.DB.Exec(query, postID)
+	return err
+}
+
+func (p *postDBMethods) ReportPost(moderID, postID int) error {
+	query := "DELETE FROM reports WHERE moderator_id = ? AND post_id = ?"
+	_, err := p.DB.Exec(query, moderID, postID)
+
+	query = "INSERT INTO reports (moderator_id, post_id) VALUES (?, ?)"
+	_, err = p.DB.Exec(query, moderID, postID)
+	return err
 }

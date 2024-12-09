@@ -156,7 +156,7 @@ func (app *Application) processOAuthUser(email, username string) error {
 	if !userExists {
 		password := utils.GenerateRandomPassword()
 		dateOfCreation := time.Now().Format("2006-01-02 15:04:05")
-		err := app.Store.User.CreateUser(username, email, password, dateOfCreation)
+		err := app.Store.User.CreateUser(username, email, "user", password, dateOfCreation)
 		if err != nil {
 			return err
 		}

@@ -29,6 +29,13 @@
       {{ end }}
     </li>
     {{ end }}
+
+    <h3>Promotion Requests:</h3>
+    {{ range .Promotions }}
+    <li>
+      <a href="/promote-to-moder?id={{.ID}}">{{.Name}}</a>
+    </li>
+    {{ end }}
   </ul>
   {{ else }}
   <p>You have no notifications.</p>

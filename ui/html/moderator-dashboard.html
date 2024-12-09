@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Moderator Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+{{ template "nav" . }}
+<main class="container">
+  <h1>Moderator Dashboard</h1>
+  <!-- Ссылка на страницу пользователя -->
+  <p><a href="/user">Go to Your Profile</a></p>
+
+  <h2>Pending Posts</h2>
+  <ul>
+    {{range .PendingPosts}}
+    <li>
+      <a href="/post?id={{.ID}}">{{.Topic}}</a> by {{.Author}}
+      <form method="POST" action="/approve-post?id={{.ID}}" style="display:inline;">
+        <button type="submit">Approve</button>
+      </form>
+      <form method="POST" action="/delete-post?id={{.ID}}" style="display:inline;">
+        <button type="submit">Delete</button>
+      </form>
+    </li>
+    {{end}}
+  </ul>
+</main>
+</body>
+</html>
