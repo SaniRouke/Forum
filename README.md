@@ -1,8 +1,7 @@
-<h1>forum</h1>
+<h1>forum-moderation</h1>
 
 ## About
-This forum is made for skufs. If you are one of us, welcome to [skuf.life](http://skuf.life)
-The project was written on [GitHub](https://github.com/SaniRouke/Forum)
+This forum is made for skufs.
 
 ## Audit
 [Audit list is here ->](https://github.com/01-edu/public/tree/master/subjects/forum/audit)
@@ -24,14 +23,12 @@ docker build -t forum-app .
 ```
 Run Docker container:
 ```bash
-docker run -p 8080:8080 forum-app
+docker run -p 8443:8443 forum-app
 ```
 
-Now you can go to the [localhost:8080](http://localhost:8080) and check the program!
+Now you can go to the [localhost:8443](http://localhost:8443) and check the program!
 
 ## Team
 **Rustam** [@srouke](https://01.alem.school/git/srouke)
 
 **Konstantin** [@kbaraban](https://01.alem.school/git/kbaraban)
-
-**Azamat** [@aurazimb](https://01.alem.school/git/aurazimb)

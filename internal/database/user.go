@@ -45,6 +45,9 @@ type UserDBInterface interface {
 	GetPromotionRequests() ([]UsersForPromotion, error)
 	PromoteToModer(userID int) error
 	DemoteToUser(userID int) error
+	DeclineModeratorRequest(userID int) error
+	HasActiveModeratorRequest(userID int) (bool, error)
+	GetAllModerators() ([]UsersForPromotion, error)
 }
 
 func DataUserWorkerCreation(db *sql.DB, logger *slog.Logger) *userDBMethods {
@@ -246,4 +249,37 @@ func (u *userDBMethods) DemoteToUser(userID int) error {
 	query := `UPDATE users SET role = 'user' WHERE id = ?;`
 	_, err := u.DB.Exec(query, userID)
 	return err
+}
+
+func (u *userDBMethods) DeclineModeratorRequest(userID int) error {
+	query := "DELETE FROM moderator_requests WHERE user_id = ?"
+	_, err := u.DB.Exec(query, userID)
+	return err
+}
+
+func (u *userDBMethods) HasActiveModeratorRequest(userID int) (bool, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM moderator_requests WHERE user_id = ?"
+	err := u.DB.QueryRow(query, userID).Scan(&count)
+	return count > 0, err
+}
+
+func (u *userDBMethods) GetAllModerators() ([]UsersForPromotion, error) {
+	query := `SELECT id, username FROM users WHERE role='moderator';`
+	rows, err := u.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mods []UsersForPromotion
+	for rows.Next() {
+		var m UsersForPromotion
+		err = rows.Scan(&m.ID, &m.Name)
+		if err != nil {
+			return nil, err
+		}
+		mods = append(mods, m)
+	}
+	return mods, nil
 }

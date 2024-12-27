@@ -59,5 +59,12 @@ func (app *Application) routes() *http.ServeMux {
 
 	mux.HandleFunc("GET /promote-to-moder", app.rateLimiterMW(app.authMW(app.handlerPromoteToModer)))
 
+	mux.HandleFunc("POST /admin/categories/add", app.rateLimiterMW(app.authMW(app.handlerAdminAddCategory)))
+	mux.HandleFunc("POST /admin/categories/delete", app.rateLimiterMW(app.authMW(app.handlerAdminDeleteCategory)))
+
+	mux.HandleFunc("POST /admin/promote-user", app.rateLimiterMW(app.authMW(app.handlerAdminPromoteUser)))
+	mux.HandleFunc("POST /admin/decline-user", app.rateLimiterMW(app.authMW(app.handlerAdminDeclineUser)))
+	mux.HandleFunc("POST /admin/demote-user", app.rateLimiterMW(app.authMW(app.handlerAdminDemoteUser)))
+
 	return mux
 }

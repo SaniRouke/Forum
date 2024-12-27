@@ -30,11 +30,15 @@
   </p>
   {{ end }}
 
-  {{if eq .User.Role "user" }}
+  {{if eq .User.Role "user"}}
+  {{if .HasModeratorRequest}}
+  <p><em>You have already requested to become a moderator.</em></p>
+  {{else}}
   <p>
     <a href="/promote">I want to be a moderator!</a>
   </p>
-  {{ end }}
+  {{end}}
+  {{end}}
 
   {{ if .Posts }}
   <h2>{{ .PageTitle }}</h2>

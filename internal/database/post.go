@@ -44,23 +44,28 @@ type PostDBInterface interface {
 	ApprovePost(postID int) error
 	GetAllPending() ([]Post, error)
 	ReportPost(moderID, postID int) error
+
+	IsReportedByModerator(moderID, postID int) (bool, error)
+	AddCategory(name string) error
+	DeleteCategory(name string) error
 }
 
 type Post struct {
-	ID           int
-	UserID       int
-	Author       string
-	Topic        string
-	Body         string
-	Date         string
-	Comments     []Comment
-	Category     string
-	Status       string
-	Likes        int
-	Dislikes     int
-	UserLiked    bool
-	UserDisliked bool
-	ImagePath    string
+	ID                         int
+	UserID                     int
+	Author                     string
+	Topic                      string
+	Body                       string
+	Date                       string
+	Comments                   []Comment
+	Category                   string
+	Status                     string
+	Likes                      int
+	Dislikes                   int
+	UserLiked                  bool
+	UserDisliked               bool
+	ImagePath                  string
+	ReportedByCurrentModerator bool
 }
 
 type Comment struct {
@@ -623,10 +628,28 @@ func (p *postDBMethods) ApprovePost(postID int) error {
 }
 
 func (p *postDBMethods) ReportPost(moderID, postID int) error {
-	query := "DELETE FROM reports WHERE moderator_id = ? AND post_id = ?"
-	_, err := p.DB.Exec(query, moderID, postID)
+	_, err := p.DB.Exec(`DELETE FROM reports WHERE moderator_id = ? AND post_id = ?`, moderID, postID)
+	if err != nil {
+		return err
+	}
 
-	query = "INSERT INTO reports (moderator_id, post_id) VALUES (?, ?)"
-	_, err = p.DB.Exec(query, moderID, postID)
+	_, err = p.DB.Exec(`INSERT INTO reports (moderator_id, post_id) VALUES (?, ?)`, moderID, postID)
+	return err
+}
+
+func (p *postDBMethods) IsReportedByModerator(moderID, postID int) (bool, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM reports WHERE moderator_id = ? AND post_id = ?"
+	err := p.DB.QueryRow(query, moderID, postID).Scan(&count)
+	return count > 0, err
+}
+
+func (p *postDBMethods) AddCategory(name string) error {
+	_, err := p.DB.Exec("INSERT INTO categories (category) VALUES (?)", name)
+	return err
+}
+
+func (p *postDBMethods) DeleteCategory(name string) error {
+	_, err := p.DB.Exec("DELETE FROM categories WHERE category = ?", name)
 	return err
 }

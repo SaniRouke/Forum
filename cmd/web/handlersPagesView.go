@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"forum/cmd/utils"
 	"forum/internal/database"
 	"net/http"
@@ -94,22 +93,31 @@ func (app *Application) handlerPostView(w http.ResponseWriter, r *http.Request) 
 		app.Log.Error(err.Error())
 		return
 	}
-	fmt.Println("post statuuuuus:", post.Status)
 	if post.ID == 0 {
 		app.ErrorPage(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
 
+	// Загрузка комментариев
 	comments, err := app.Store.Post.GetComments(id, user.ID)
 	if err != nil {
 		app.ErrorPage(w, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		app.Log.Error(err.Error())
 		return
 	}
-
 	post.Comments = comments
 
+	// Если текущий пользователь - модератор, проверяем, репортил ли он этот пост
+	if user.Role == "moderator" {
+		reported, err := app.Store.Post.IsReportedByModerator(user.ID, idInt)
+		if err == nil && reported {
+			post.ReportedByCurrentModerator = true
+		}
+	}
+
+	// Приведение категорий к более читабельному виду
 	post.Category = strings.ReplaceAll(post.Category, ",", ", ")
+
 	data := struct {
 		Post database.Post
 		User User
@@ -144,6 +152,12 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 
 	action := r.URL.Query().Get("action")
 
+	hasRequest, err := app.Store.User.HasActiveModeratorRequest(user.ID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
 	switch action {
 	case "posts":
 		posts, err = app.Store.Post.GetPostsByUser(user.ID)
@@ -175,13 +189,15 @@ func (app *Application) handlerUserPage(w http.ResponseWriter, r *http.Request) 
 	}
 
 	data := struct {
-		User      interface{}
-		Posts     []database.Post
-		PageTitle string
+		User                interface{}
+		Posts               []database.Post
+		PageTitle           string
+		HasModeratorRequest bool
 	}{
-		User:      userData,
-		Posts:     posts,
-		PageTitle: pageTitle,
+		User:                userData,
+		Posts:               posts,
+		PageTitle:           pageTitle,
+		HasModeratorRequest: hasRequest,
 	}
 
 	err = utils.RenderTemplate(w, "user.html", data, http.StatusOK)
@@ -305,35 +321,48 @@ func (app *Application) handlerAdminDashboard(w http.ResponseWriter, r *http.Req
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
-	//Check if user is admin
 	if user.Role != "admin" {
-		app.ErrorPage(w, http.StatusForbidden, "You are not allowed here.")
+		app.ErrorPage(w, http.StatusForbidden, "Forbidden")
 		return
 	}
 
-	// Fetch categories (assuming GetCategories returns a []string)
 	categories, err := app.Store.Post.GetCategories()
 	if err != nil {
 		app.ServerErr(w, err)
 		return
 	}
 
-	//// Fetch reports from moderators (this is just an example method; you must implement it)
 	reports, err := app.Store.Notification.GetAllReports()
 	if err != nil {
 		app.ServerErr(w, err)
 		return
 	}
 
+	promotionRequests, err := app.Store.User.GetPromotionRequests()
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
+	// Получаем список действующих модераторов
+	moderators, err := app.Store.User.GetAllModerators()
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+
 	data := struct {
-		User       User
-		Categories []string
-		Reports    []database.Report
+		User              User
+		Categories        []string
+		Reports           []database.Report
+		PromotionRequests []database.UsersForPromotion
+		Moderators        []database.UsersForPromotion
 	}{
-		User:       user,
-		Categories: categories,
-		Reports:    reports,
+		User:              user,
+		Categories:        categories,
+		Reports:           reports,
+		PromotionRequests: promotionRequests,
+		Moderators:        moderators,
 	}
 
 	err = utils.RenderTemplate(w, "admin-dashboard.html", data, http.StatusOK)

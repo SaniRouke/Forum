@@ -125,8 +125,6 @@ func (app *Application) handlerEditPost(w http.ResponseWriter, r *http.Request) 
 
 		if !isValidCategory {
 			app.ErrorPage(w, http.StatusBadRequest, "Don't Play With Us, Bro")
-			fmt.Println("validCategories:", validCategories)
-			fmt.Println("category:", category)
 			return
 		}
 
@@ -425,8 +423,10 @@ func (app *Application) handlerDeleteComment(w http.ResponseWriter, r *http.Requ
 	}
 
 	if comment.UserID != user.ID {
-		app.ErrorPage(w, http.StatusForbidden, "You are not allowed to delete this comment")
-		return
+		if user.Role != "admin" && user.Role != "moderator" {
+			app.ErrorPage(w, http.StatusForbidden, "You are not allowed to delete this comment")
+			return
+		}
 	}
 
 	err = app.Store.Post.DeleteComment(commentID)
@@ -775,4 +775,105 @@ func (app *Application) handlerReactToComment(w http.ResponseWriter, r *http.Req
 
 	http.Redirect(w, r, "/post?id="+string(postID), http.StatusSeeOther)
 
+}
+
+func (app *Application) handlerAdminAddCategory(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil || user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "Forbidden")
+		return
+	}
+	categoryName := r.FormValue("category")
+	if categoryName == "" {
+		app.ErrorPage(w, http.StatusBadRequest, "Empty category name")
+		return
+	}
+	err = app.Store.Post.AddCategory(categoryName)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+func (app *Application) handlerAdminDeleteCategory(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil || user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "Forbidden")
+		return
+	}
+
+	categoryName := r.URL.Query().Get("name")
+	if categoryName == "" {
+		app.ErrorPage(w, http.StatusBadRequest, "Category name is missing")
+		return
+	}
+	err = app.Store.Post.DeleteCategory(categoryName)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+func (app *Application) handlerAdminPromoteUser(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil || user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "Forbidden")
+		return
+	}
+	requestIDStr := r.URL.Query().Get("id")
+	requestID, err := strconv.Atoi(requestIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+	// Promote user
+	err = app.Store.User.PromoteToModer(requestID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+func (app *Application) handlerAdminDeclineUser(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil || user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "Forbidden")
+		return
+	}
+	requestIDStr := r.URL.Query().Get("id")
+	requestID, err := strconv.Atoi(requestIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+	// Удаляем из таблицы moderator_requests
+	err = app.Store.User.DeclineModeratorRequest(requestID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+func (app *Application) handlerAdminDemoteUser(w http.ResponseWriter, r *http.Request) {
+	user, err := app.GetUserSession(r)
+	if err != nil || user.Role != "admin" {
+		app.ErrorPage(w, http.StatusForbidden, "Forbidden")
+		return
+	}
+	requestIDStr := r.URL.Query().Get("id")
+	requestID, err := strconv.Atoi(requestIDStr)
+	if err != nil {
+		app.ErrorPage(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+	err = app.Store.User.DemoteToUser(requestID)
+	if err != nil {
+		app.ServerErr(w, err)
+		return
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }

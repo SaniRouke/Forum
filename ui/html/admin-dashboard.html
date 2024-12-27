@@ -9,25 +9,65 @@
 {{ template "nav" . }}
 <main class="container">
   <h1>Admin Dashboard</h1>
-  <!-- Ссылка обратно на страницу пользователя -->
   <p><a href="/user">Go to Your Profile</a></p>
 
   <section>
     <h2>Manage Categories</h2>
-    <form method="POST" action="/admin/categories/add">
-      <label>Category name: <input type="text" name="category" required></label>
-      <button type="submit">Add Category</button>
+    <form method="POST" action="/admin/categories/add" class="category-form">
+      <label>Category name:
+        <input type="text" name="category" required>
+      </label>
+      <button type="submit" class="btn-admin">Add Category</button>
     </form>
 
     <ul>
       {{range .Categories}}
       <li>{{.}}
         <form method="POST" action="/admin/categories/delete?name={{.}}" style="display:inline;">
-          <button type="submit">Delete</button>
+          <button type="submit" class="btn-admin">Delete</button>
         </form>
       </li>
       {{end}}
     </ul>
+  </section>
+
+  <section>
+    <h2>Promotion Requests</h2>
+    {{ if .PromotionRequests }}
+    <ul>
+      {{ range .PromotionRequests }}
+      <li>
+        {{ .Name }}
+        <form method="POST" action="/admin/promote-user?id={{.ID}}" style="display:inline;">
+          <button type="submit" class="btn-admin">Approve</button>
+        </form>
+        <form method="POST" action="/admin/decline-user?id={{.ID}}" style="display:inline;">
+          <button type="submit" class="btn-admin-delete">Decline</button>
+        </form>
+      </li>
+      {{ end }}
+    </ul>
+    {{ else }}
+    <p>No promotion requests.</p>
+    {{ end }}
+  </section>
+
+  <section>
+    <h2>Current Moderators</h2>
+    {{ if .Moderators }}
+    <ul>
+      {{ range .Moderators }}
+      <li>
+        {{ .Name }}
+        <form method="POST" action="/admin/demote-user?id={{.ID}}" style="display:inline;">
+          <button type="submit" class="btn-admin-delete">Demote to User</button>
+        </form>
+      </li>
+      {{ end }}
+    </ul>
+    {{ else }}
+    <p>No active moderators.</p>
+    {{ end }}
   </section>
 
   <section>
@@ -36,7 +76,7 @@
     <ul>
       {{range .Reports}}
       <li>
-        <a href="/post?id={{ .PostID }}">Moderator: {{ .ModeratorName }} Suspicious Post: {{ .PostID }}</a>
+        <a href="/post?id={{ .PostID }}">Moderator: {{ .ModeratorName }} | Suspicious Post: {{ .PostID }}</a>
       </li>
       {{end}}
     </ul>
@@ -44,6 +84,7 @@
     <p>No reports.</p>
     {{end}}
   </section>
+
 </main>
 </body>
 </html>

@@ -11,16 +11,16 @@
 <main class="container">
     <h1 class="post-topic">{{ .Post.Topic }}</h1>
 
-    {{if or (eq .Post.Status "approved") (or (eq .User.Role "moderator") (eq .User.Role "admin"))}}
-    <!-- Если пост одобрен, отображаем детали поста, картинки, реакции, комментарии -->
+    {{ if or (eq .Post.Status "approved") (or (eq .User.Role "moderator") (eq .User.Role "admin")) }}
     <div class="post-content">
         <p>{{- .Post.Body -}}</p>
     </div>
-    {{ if .Post.ImagePath}}
+    {{ if .Post.ImagePath }}
     <div class="post-image">
         <img src="{{ .Post.ImagePath }}" alt="Post Image" style="max-width: 100%; height: auto;">
     </div>
     {{ end }}
+
     <div class="forlikes-wrapper">
         <div>
             <p><strong>Author:</strong> {{ .Post.Author }}</p>
@@ -69,17 +69,24 @@
                 </div>
             </form>
         </div>
+
         {{ if eq .UserID $user.ID }}
+        <!-- Автор комментария -->
         <div class="post-buttons">
             <a href="/edit-comment?id={{ .ID }}" class="action-button">Edit</a>
             <form action="/delete-comment?id={{ .ID }}" method="POST" style="display:inline;">
                 <button type="submit" class="action-button">Delete</button>
             </form>
         </div>
+        {{ else if or (eq $.User.Role "admin") (eq $.User.Role "moderator") }}
+        <div class="post-buttons">
+            <form action="/delete-comment?id={{ .ID }}" method="POST" style="display:inline;">
+                <button type="submit" class="action-button btn-moderator-delete">Delete (Admin/Moderator)</button>
+            </form>
+        </div>
         {{ end }}
     </div>
     {{ end }}
-
     {{ else }}
     <p>No comments yet. Be the first to comment!</p>
     {{ end }}
@@ -108,27 +115,33 @@
         {{ end }}
     </div>
 
-    {{if or (eq .User.Role "moderator") (eq .User.Role "admin")}}
+    {{ if or (eq .User.Role "moderator") (eq .User.Role "admin") }}
+    {{ if ne .Post.Status "approved" }}
     <p><em>Post is pending approval.</em></p>
-   {{ if ne .Post.Status "approved" }}
     <form method="POST" action="/approve-post?id={{.Post.ID}}">
-        <button type="submit">Approve</button>
+        <button type="submit" class="btn-moderator">Approve</button>
     </form>
     {{ end }}
+    {{ if ne .Post.UserID .User.ID }}
     <form method="POST" action="/delete-post?id={{.Post.ID}}">
-        <button type="submit">Delete</button>
-    </form>
-    {{end}}
-
-    {{if eq .User.Role "moderator" }}
-    <form method="POST" action="/report-post?id={{.Post.ID}}">
-        <button type="submit">Report</button>
+        <button type="submit" class="btn-moderator-delete">Delete as Moderator/Admin</button>
     </form>
     {{ end }}
+    {{ end }}
 
-    {{else}}
+    {{ if eq .User.Role "moderator" }}
+    {{ if .Post.ReportedByCurrentModerator }}
+    <p class="already-reported">You have already reported this post.</p>
+    {{ else }}
+    <form method="POST" action="/report-post?id={{.Post.ID}}">
+        <button type="submit" class="btn-moderator-disable">Report</button>
+    </form>
+    {{ end }}
+    {{ end }}
+
+    {{ else }}
     <p><em>This post is pending moderation and currently not available.</em></p>
-    {{end}}
+    {{ end }}
 </main>
 </body>
 </html>
